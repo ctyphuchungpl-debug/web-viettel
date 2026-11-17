@@ -1,0 +1,245 @@
+/* Layout adjustments for typography at 1.5 times the original site sizes. */
+html { scroll-padding-top: 180px; }
+html:root body :where(section,article,aside,form,nav,div) { min-width: 0; }
+html:root body :where(h1,h2,h3,h4,p,a,button,small,strong,span,dt,dd,label,summary) { overflow-wrap: anywhere; }
+html:root body :where(h1,h2,h3,h4) { text-wrap: balance; }
+html:root body :where(button,a,summary) > svg { flex-shrink: 0; }
+html:root body .wrap { width: min(1360px,calc(100% - 96px)); }
+html:root body .section { padding-block: 96px; }
+html:root body .header-inner {
+  display: grid; grid-template-columns: minmax(0,1fr) auto;
+  height: auto; min-height: 94px; padding-block: 18px; gap: 16px 28px;
+}
+html:root body .header-inner > .brand { grid-column: 1; grid-row: 1; }
+html:root body .header-inner > .header-cta { grid-column: 2; grid-row: 1; margin: 0; }
+html:root body .header-inner > nav { grid-column: 1/-1; grid-row: 2; margin: 0; width: 100%; justify-content: flex-start; flex-wrap: wrap; gap: 18px 40px; }
+html:root body .topline .wrap { flex-wrap: wrap; gap: 10px 24px; }
+html:root body .btn { padding: 18px 24px; gap: 14px; text-align: center; }
+html:root body :is(.hero,.td-hero,.ca-hero,.vct-hero) { grid-template-columns: minmax(0,1fr); gap: 64px; }
+html:root body :is(.hero-copy>p,.td-hero-copy>p,.ca-hero-copy>p,.vct-hero>div>p) { max-width: 1100px; }
+html:root body :is(.hero-visual,.td-hero-visual,.ca-hero-visual,.vct-art) { width: 100%; max-width: 820px; justify-self: center; }
+html:root body :is(.hero-actions,.hero-stats,.td-hero-actions,.td-hero-proof,.ca-actions,.ca-methods,.vct-actions,.vct-methods) { flex-wrap: wrap; gap: 24px; }
+html:root body :is(.advisor-tag,.td-person) { position: relative; inset: auto; margin-top: -24px; }
+html:root body :is(.photo-frame,.td-photo-wrap) { height: 650px; }
+html:root body .photo-label { max-width: calc(100% - 44px); }
+html:root body .photo-side { display: none; }
+html:root body :is(.section-heading,.td-section-heading,.ca-heading,.vct-heading) { align-items: flex-start; flex-direction: column; gap: 28px; }
+html:root body :is(.section-heading>p,.td-section-heading>p) { max-width: 1000px; }
+html:root body .solution-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 28px; }
+html:root body :is(.card-body,.help-card,.feature-copy) { padding: 30px; }
+html:root body :is(.card-actions,.filters,.product-tabs,.resource-tabs,.resource-nav) { flex-wrap: wrap; gap: 18px; }
+html:root body .card-actions > .btn { flex: 1 1 180px; }
+html:root body .card-actions > button:last-child { flex: 0 0 auto; }
+html:root body :is(.visual-feature,.video-grid,.register-grid,.faq-section,.td-benefit-layout,.td-advantages,.td-contact-grid,.ca-contact,.vct-verify,.vct-contact) { grid-template-columns: minmax(0,1fr); gap: 56px; }
+html:root body .feature-art { max-height: 540px; }
+html:root body .feature-copy { gap: 16px; }
+html:root body .video-list { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+html:root body .video-list button { flex-direction: row; align-items: center; padding: 26px; }
+html:root body .video-list img { display: none; }
+html:root body .product-nav { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); overflow: visible; }
+html:root body .product-nav :is(a,button) { white-space: normal; padding: 24px 18px; }
+html:root body .register-copy { display: block; }
+html:root body .register-copy>p { max-width: 1000px; }
+html:root body .registration-form { padding: 36px; }
+html:root body .registration-form :is(input:not([type=checkbox]),textarea) { padding: 20px; }
+html:root body .registration-form input[type=checkbox] { width: 24px; height: 24px; flex: none; }
+html:root body .choices { gap: 16px; }
+html:root body .registration-form .choices label { padding: 20px; gap: 14px; }
+html:root body .confirmation { width: min(980px,calc(100% - 40px)); max-width: 980px; padding: 52px; }
+html:root body .summary-data > div { grid-template-columns: minmax(180px,.45fr) minmax(0,1fr); gap: 24px; }
+html:root body :is(.modal-close,.selected-quote-remove) { width: 44px; height: 44px; }
+html:root body :is(.footer-main,.footer-bottom) { flex-wrap: wrap; gap: 28px; }
+html:root body .footer-phone { white-space: normal; }
+html:root body :is(.td-feature-grid,.ca-benefits,.vct-benefits,.vct-steps,.sinv-reasons-grid,.sinv-advantages-grid,.bh-reasons,.bh-advantages) { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 44px; }
+html:root body :is(.td-operations,.sinv-feature-grid,.sinv-feature-list,.bh-feature-grid) { grid-template-columns: minmax(0,1fr); gap: 40px; }
+html:root body :is(.td-operation p,.td-advantages-intro>p,.td-contact-grid>div>p,.ca-contact>div>p,.vct-contact>div>p,.bh-contact p) { max-width: 100%; }
+html:root body :is(.td-feature-card,.ca-benefits article,.vct-steps article) { min-height: 0; padding: 36px; }
+html:root body :is(.td-feature-card h3,.vct-steps h3,.iq-card h2,.tq-card h3,.bqp-card h3,.vcq-description) { min-height: 0; }
+html:root body .td-feature-card { display: flex; flex-direction: column; gap: 32px; }
+html:root body :is(.td-audience>.wrap,.sinv-intro-actions,.sinv-contact-actions,.bh-intro-actions,.bh-contact-actions,.vct-contact-actions,.ca-contact-actions) { flex-wrap: wrap; gap: 28px; }
+html:root body .td-audience>.wrap { display: flex; }
+html:root body :is(.td-contact-person,.ca-contact-person,.vct-advisor) { grid-template-columns: minmax(220px,.7fr) minmax(0,1fr); }
+html:root body .td-contact-person>img { width: 180px; height: 230px; }
+html:root body :is(.ca-phone,.vct-advisor a,.sinv-contact-phone,.sinv-advisor-tag>a,.bh-advisor a,.bh-contact-actions>a:first-child) { white-space: normal; flex-wrap: wrap; }
+html:root body .bh-banner-grid { grid-template-columns: minmax(0,1fr); }
+html:root body .bh-banner-photo { margin: 0; height: 650px; }
+html:root body .bh-banner-photo>img { min-height: 0; }
+html:root body :is(.bh-help,.sinv-contact) { grid-template-columns: minmax(0,1fr); }
+html:root body .bh-feature:nth-child(n) { padding-inline: max(32px,calc((100vw - 1360px)/2)); gap: 32px; }
+html:root body :is(.sinv-support-grid,.sinv-contact,.bh-contact) { flex-wrap: wrap; }
+html:root body :is(.sinv-contact h2>span,.iq-title h1>span,.vct-signers span) { white-space: normal; }
+html:root body :is(.td-bottom-nav,.td-footer>.wrap,.ca-bottom,.ca-footer>.wrap,.vct-bottom,.vct-footer>.wrap,.sinv-source,.bh-source) { flex-wrap: wrap; gap: 28px; }
+/* Price lists and dialogs gain wider cards and normal document flow. */
+html:root body :is(.bqp-grid,.iq-grid,.cq-grid,.vcq-grid,.tq-grid) { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 32px; }
+html:root body :is(.bqp-card,.iq-card,.cq-card,.vcq-card,.tq-card) { padding: 36px; }
+html:root body :is(.cq-dialog,.vcq-dialog,.tq-dialog) { width: min(1600px,calc(100% - 40px)); }
+html:root body :is(.cq-close,.vcq-close,.tq-close) { width: 52px; height: 52px; top: 24px; right: 24px; }
+html:root body :is(.cq-dialog-header,.vcq-heading,.tq-header) { padding-right: 90px; }
+html:root body :is(.cq-intro,.vcq-intro) { max-width: 1200px; }
+html:root body .tq-body { grid-template-columns: minmax(0,1fr); gap: 36px; }
+html:root body .tq-filter-fields { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 24px; }
+html:root body :is(.tq-tabs,.cq-tabs,.iq-tabs,.cq-method-nav) { width: 100%; max-width: 1100px; }
+html:root body :is(.tq-tabs button,.cq-tabs>button,.iq-tabs>button) { white-space: normal; }
+html:root body .bqp-group-nav { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px; }
+html:root body :is(.bqp-group-heading,.cq-group-title,.cq-contact,.cq-missing,.vcq-consult,.iq-contact,.bqp-contact,.cq-page-bottom,.vcq-bottom,.iq-footer,.bqp-footer) { flex-wrap: wrap; gap: 28px; }
+html:root body :is(.bqp-group-heading>strong,.bqp-contact>a,.iq-contact>a) { margin-left: 0; }
+html:root body :is(.bqp-price-block>p,.iq-price,.iq-combo-price>strong,.cq-price,.vcq-sale>p,.tq-price,.vcq-fees dd,.cq-contact>a,.cq-missing>a,.vcq-consult>a,.iq-contact>a,.bqp-contact>a) { white-space: normal; }
+html:root body .bqp-filters { max-width: 1200px; }
+html:root body :is(.iq-combo-table-heading,.iq-combo-row) { grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 28px; }
+html:root body .iq-combo-row>a { grid-column: 1/-1; }
+@media(max-width:1000px) {
+  html:root body .wrap { width: calc(100% - 48px); }
+  html:root body :is(.solution-grid,.td-feature-grid,.ca-benefits,.vct-benefits,.sinv-reasons-grid,.sinv-advantages-grid,.bh-reasons,.bh-advantages,.bqp-grid,.iq-grid,.cq-grid,.vcq-grid,.tq-grid) { grid-template-columns: minmax(0,1fr); }
+  html:root body .tq-filter-fields { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  html:root body :is(.topline .private-label,.topline .wrap>span:first-child) { display: none; }
+}
+@media(max-width:600px) {
+  html { scroll-padding-top: 24px; }
+  html:root body .header { position: relative; }
+  html:root body .wrap { width: calc(100% - 36px); }
+  html:root body .section { padding-block: 64px; }
+  html:root body .header-inner { padding-block: 18px; min-height: 84px; gap: 18px 10px; }
+  html:root body .brand-text { white-space: normal; }
+  html:root body .header-inner>.header-cta { grid-column: 1/-1; grid-row: 3; width: 100%; }
+  html:root body .header-inner:has(.menu-toggle)>.header-cta { display: none; }
+  html:root body .menu-toggle { width: 44px; height: 44px; grid-column: 2; grid-row: 1; }
+  html:root body .header-inner>.main-nav { display: none; position: static; padding: 18px 0; box-shadow: none; }
+  html:root body .header-inner>.main-nav.is-open { display: flex; flex-direction: column; align-items: stretch; }
+  html:root body .header-inner>nav:not(.main-nav) { display: flex; gap: 16px 24px; }
+  html:root body .header-inner>a:last-child:not(.brand) { grid-column: 1/-1; max-width: none; }
+  html:root body :is(.hero,.td-hero,.ca-hero,.vct-hero) { gap: 38px; padding-top: 36px; }
+  html:root body :is(.hero h1,.td-hero h1,.ca-hero h1,.vct-hero h1,.bh-banner h1,.sinv-intro h1) { font-size: min(2em,14.25vw); line-height: 1.15; letter-spacing: -.03em; }
+  html:root body :is(.photo-frame,.td-photo-wrap) { height: 460px; }
+  html:root body :is(.advisor-tag,.td-person) { padding: 24px 20px; gap: 16px; }
+  html:root body :is(.hero-actions,.hero-stats,.td-hero-actions,.ca-actions,.vct-actions,.slide-controls) { gap: 20px; }
+  html:root body .hero-actions>.btn { width: 100%; }
+  html:root body .eyebrow { letter-spacing: 1px; }
+  html:root body .product-nav { grid-template-columns: repeat(2,minmax(0,1fr)); padding-inline: 0; }
+  html:root body :is(.card-body,.help-card,.feature-copy,.registration-form,.bqp-card,.iq-card,.cq-card,.vcq-card,.tq-card) { padding: 26px 20px; }
+  html:root body :is(.card-actions,.form-row,.choices,.video-list,.td-operations,.vct-steps,.ca-contact-person,.vct-advisor,.td-contact-person,.bqp-filters,.tq-filter-fields,.iq-combo-row) { grid-template-columns: minmax(0,1fr); }
+  html:root body .card-actions { display: flex; flex-wrap: wrap; }
+  html:root body .card-actions>.btn { flex-basis: 100%; }
+  html:root body .card-actions>.select-product { margin-left: auto; }
+  html:root body .filters { gap: 10px; }
+  html:root body .filters button { padding: 14px 16px; }
+  html:root body .registration-form :is(input:not([type=checkbox]),textarea) { padding: 16px 12px; }
+  html:root body .registration-form .choices label { padding: 16px 12px; }
+  html:root body .form-top { flex-wrap: wrap; }
+  html:root body .confirmation { width: calc(100% - 20px); padding: 42px 20px 24px; }
+  html:root body .summary-data>div { grid-template-columns: minmax(0,1fr); gap: 8px; }
+  html:root body .summary-data dd { margin: 0; }
+  html:root body .next-email { flex-direction: column; }
+  html:root body .footer-main { display: flex; flex-direction: column; align-items: flex-start; }
+  html:root body .footer-bottom { padding-bottom: 110px; }
+  html:root body .mobile-cta { padding-inline: 12px; gap: 8px; }
+  html:root body .mobile-cta a { flex-direction: row; gap: 7px; padding: 12px 6px; line-height: 1.3; }
+  html:root body :is(.td-audience>.wrap,.vct-methods) { flex-direction: column; align-items: flex-start; }
+  html:root body .td-scale { flex-direction: column; align-items: flex-start; gap: 24px; }
+  html:root body .td-scale-line { display: none; }
+  html:root body :is(.ca-contact-photo,.vct-advisor>img) { height: 400px; }
+  html:root body .bh-banner-photo { height: 460px; }
+  html:root body .bh-intro-actions { flex-direction: column; align-items: stretch; }
+  html:root body .bh-intro-actions>a { width: 100%; min-width: 0; max-width: 100%; }
+  html:root body .bh-hotline { padding-inline: 18px; }
+  html:root body .bh-hotline strong { font-size: clamp(22.5px,7.5vw,48px); white-space: normal; }
+  html:root body .bh-feature:nth-child(n) { padding: 38px 20px; flex-direction: column; align-items: flex-start; }
+  html:root body .sinv-feature-list>article { flex-direction: column; gap: 24px; }
+  html:root body :is(.sinv-advisor-tag,.bh-advisor) { position: relative; inset: auto; width: 100%; }
+  html:root body :is(.cq-dialog,.vcq-dialog,.tq-dialog) { width: calc(100% - 16px); }
+  html:root body :is(.cq-close,.vcq-close,.tq-close) { width: 44px; height: 44px; top: 14px; right: 14px; }
+  html:root body :is(.cq-dialog-header,.vcq-heading,.tq-header) { padding-top: 70px; padding-right: 20px; padding-left: 20px; }
+  html:root body :is(.cq-content,.vcq-content,.tq-body) { padding-inline: 16px; }
+  html:root body .cq-method-nav { flex-direction: column; }
+  html:root body :is(.bqp-group-nav,.bqp-filters) { grid-template-columns: minmax(0,1fr); }
+  html:root body :is(.cq-tabs,.iq-tabs,.tq-tabs) { flex-direction: column; border-radius: 18px; }
+  html:root body :is(.cq-tabs>button,.iq-tabs>button,.tq-tabs>button) { width: 100%; border-radius: 16px; padding: 20px 16px; }
+  html:root body .bqp-segment { border-radius: 18px; }
+  html:root body .bqp-segment span { border-radius: 14px; padding: 16px 8px; }
+  html:root body .bqp-group-heading { align-items: flex-start; }
+  html:root body .bqp-group-heading>strong { border: 0; padding: 0; }
+  html:root body .iq-combo-table-heading { display: none; }
+}
+
+/* Restore the homepage headline's original scale and side-by-side portrait. */
+html:root body .hero {
+  display: grid;
+  grid-template-columns: minmax(0,1.12fr) minmax(0,1fr);
+  align-items: center;
+  gap: 64px;
+}
+html:root body .hero h1 { font-size: 64px; line-height: 1.055; letter-spacing: -2.9px; }
+html:root body .hero-visual { width: 100%; max-width: none; justify-self: stretch; }
+html:root body .hero .photo-frame { height: 528px; }
+html:root body .hero .advisor-tag { gap: 16px; }
+html:root body .hero .advisor-arrow { flex-shrink: 0; }
+@media(min-width:1600px) {
+  html:root body .hero h1 { font-size: 72px; }
+  html:root body .hero .photo-frame { height: 570px; }
+}
+@media(max-width:1100px) {
+  html:root body .hero { gap: 38px; }
+  html:root body .hero h1 { font-size: 54px; }
+  html:root body .hero .photo-frame { height: 490px; }
+}
+@media(max-width:800px) {
+  html:root body .hero { gap: 28px; }
+  html:root body .hero h1 { font-size: 43px; letter-spacing: -2px; }
+}
+@media(max-width:760px) {
+  html:root body .hero { grid-template-columns: minmax(0,1fr); gap: 38px; }
+  html:root body .hero-visual { max-width: 560px; justify-self: center; }
+  html:root body .hero .photo-frame { height: 460px; }
+}
+@media(max-width:560px) {
+  html:root body .hero h1 { font-size: 48px; line-height: 1.06; letter-spacing: -2.2px; }
+}
+
+/* Balance the consultation introduction with its form on the right. */
+html:root body .register-grid {
+  grid-template-columns: minmax(0,.85fr) minmax(0,1.15fr);
+  align-items: start;
+  gap: 64px;
+}
+html:root body .register-copy h2 { font-size: 43px; line-height: 1.17; }
+html:root body .register-copy>p { max-width: 100%; }
+@media(max-width:1100px) {
+  html:root body .register-grid { gap: 38px; }
+  html:root body .register-copy h2 { font-size: 36px; }
+}
+@media(max-width:1000px) {
+  html:root body .register-grid { grid-template-columns: minmax(0,1fr); gap: 40px; }
+}
+@media(max-width:800px) {
+  html:root body .register-copy h2 { font-size: 34px; }
+}
+@media(max-width:560px) {
+  html:root body .register-copy h2 { font-size: 33px; line-height: 1.18; }
+}
+
+/* All five solution slides share a balanced text-left, image-right layout. */
+html:root body .visual-feature {
+  grid-template-columns: minmax(0,1fr) minmax(0,1.1fr);
+  align-items: stretch;
+  gap: 0;
+  min-height: 520px;
+}
+html:root body .feature-copy { padding: 40px; gap: 0; }
+html:root body .feature-copy h3 { line-height: 1.2; }
+html:root body .feature-art { min-height: 520px; max-height: none; padding: 24px; aspect-ratio: auto; }
+html:root body .feature-art img { width: 100%; height: auto; max-height: 480px; object-fit: contain; }
+html:root body .slide-controls { flex-wrap: wrap; gap: 12px; }
+html:root body .slide-controls button { width: 44px; height: 44px; }
+@media(max-width:1000px) {
+  html:root body .feature-copy { padding: 28px; }
+  html:root body .feature-copy h3 { font-size: 37.5px; }
+  html:root body .feature-art { padding: 18px; }
+}
+@media(max-width:760px) {
+  html:root body .visual-feature { grid-template-columns: minmax(0,1fr); min-height: 640px; }
+  html:root body .feature-art { min-height: 0; padding: 20px; }
+  html:root body .feature-art img { max-height: none; }
+}
+@media(max-width:560px) {
+  html:root body .feature-copy { padding: 28px 22px; }
+  html:root body .feature-copy h3 { font-size: 32px; }
+}
