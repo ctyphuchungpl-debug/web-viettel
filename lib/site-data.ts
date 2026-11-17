@@ -96,6 +96,14 @@ export const contentSchemas = {
 };
 export type ContentKey = keyof typeof contentSchemas;
 export type SiteContent = { [K in ContentKey]: z.infer<(typeof contentSchemas)[K]> };
+export const mediaImagePaths = ["banner","promotion","promotionPortrait","ecosystem","products.tendoo","products.chukyso","products.hopdong","products.hoadon","products.bhxh"] as const;
+export type MediaImagePath = typeof mediaImagePaths[number];
+export function mediaImageValue(media: SiteContent["media"], path: MediaImagePath): string {
+  return path.startsWith("products.") ? media.products[path.slice(9) as Service] : media[path as keyof Omit<SiteContent["media"],"products">];
+}
+export function replaceMediaImage(media: SiteContent["media"], path: MediaImagePath, value: string): SiteContent["media"] {
+  return path.startsWith("products.") ? { ...media, products: { ...media.products, [path.slice(9)]: value } } : { ...media, [path]: value };
+}
 export type PublicSite = Omit<SiteContent, "contact"> & { contact: Omit<SiteContent["contact"], "email"> };
 const enable = <T,>(items:T[]) => items.map(item => ({ ...item, enabled: true }));
 export const defaults: SiteContent = {

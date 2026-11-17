@@ -21,6 +21,7 @@ npm run admin:hash
 Lệnh khởi tạo có thể chạy lại và giữ nguyên các mục đã chỉnh sửa. Với lệnh tạo hash, nhập mật khẩu 12–200 ký tự trên terminal riêng rồi kết thúc stdin bằng Ctrl+Z và Enter trên Windows hoặc Ctrl+D trên macOS/Linux. Đây là bước nhập văn bản, terminal có thể hiện ký tự. Đặt kết quả vào ADMIN_PASSWORD_HASH và chọn ADMIN_USERNAME. Khởi động lại dev sau khi cập nhật biến môi trường.
 
 - Liên kết **Public Vercel Blob store** riêng, điền BLOB_READ_WRITE_TOKEN. Admin chọn ảnh JPG, PNG hoặc WebP tối đa 10 MB và xem trước bản WebP sau khi tải. Bấm **Lưu và xuất bản** để cập nhật trang khách.
+- Trong **Ảnh & poster → Ảnh website**, mỗi ảnh có nút **Lưu ảnh này**. Trong **Thư viện ảnh**, dùng **Lưu mục này** khi sửa một mục. Nút **Lưu danh sách** áp dụng thêm thay đổi về thứ tự, ẩn hoặc xóa trong thư viện.
 - Điền địa chỉ **Email nhận tư vấn** trong **Admin → Liên hệ**. Xác minh tên miền gửi trên Resend và đặt RESEND_API_KEY, RESEND_FROM_EMAIL. Yêu cầu được lưu trước khi gửi email. Admin hiển thị kết quả gửi riêng cho chuyên viên và khách. Khách được gửi xác nhận nếu nhập email.
 - Các nút ẩn và xóa áp dụng khi bấm **Lưu và xuất bản**. Kiểm tra giá theo bảng của Viettel trước khi công bố. Trong bản gốc, tên VCONT_10K nói 10.000 hợp đồng nhưng trường số lượng là 0. Dữ liệu đó giữ ghi chú cần xác nhận.
 

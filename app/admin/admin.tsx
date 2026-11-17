@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { contactFields, listFields, mediaFields, priceFields, visibilityFields, type Field } from "../../lib/admin-fields";
-import { serviceNames, services, type ContentKey, type Service, type SiteContent } from "../../lib/site-data";
+import { mediaImageValue, replaceMediaImage, serviceNames, services, type ContentKey, type MediaImagePath, type Service, type SiteContent } from "../../lib/site-data";
 
 type Notice = { text: string; error: boolean };
 type Entry = { id: string; enabled: boolean } & Record<string, unknown>;
@@ -60,8 +60,9 @@ async function encode(file: File): Promise<Blob> {
   } finally { bitmap.close(); }
 }
 
-function ImageField({ label, value, optional, change, report, lock }: {
+function ImageField({ label, value, optional, change, report, lock, publish, canPublish }: {
   label:string;value:string;optional?:boolean;change:(value:string)=>void;report:(text:string,error?:boolean)=>void;lock:(pending:boolean)=>void;
+  publish?:()=>void;canPublish?:boolean;
 }) {
   const file = useRef<HTMLInputElement>(null);
   const [uploading,setUploading] = useState(false);
@@ -90,6 +91,7 @@ function ImageField({ label, value, optional, change, report, lock }: {
       <input type="file" aria-label={"Chọn file " + label} accept="image/png,image/jpeg,image/webp" ref={file}
         onChange={upload} disabled={uploading}/>
       {optional && value && <button type="button" className="vui-secondary" onClick={()=>change("")} disabled={uploading}>Bỏ ảnh</button>}
+      {publish && <button type="button" onClick={publish} disabled={uploading || !canPublish} aria-label={"Lưu "+label}>Lưu ảnh này</button>}
     </div>
     <small>JPG, PNG, WebP · Tối đa 10 MB</small>
   </div>;
@@ -120,8 +122,9 @@ function Fields({ fields, record, change, report, lock }: {
   })}</div>;
 }
 
-function ListEditor({ items, fields, set, report, lock }: {
+function ListEditor({ items, fields, set, report, lock, publishItem, itemChanged }: {
   items:Entry[];fields:Field[];set:(items:Entry[])=>void;report:(text:string,error?:boolean)=>void;lock:(pending:boolean)=>void;
+  publishItem?:(item:Entry)=>void;itemChanged?:(item:Entry)=>boolean;
 }) {
   const [editing,setEditing] = useState("");
   const item = items.find(entry=>entry.id === editing);
@@ -138,6 +141,7 @@ function ListEditor({ items, fields, set, report, lock }: {
     {item && <section className="vui-row-editor" aria-label="Chỉnh sửa mục">
       <div className="vui-toolbar"><h2>{labelOf(item)}</h2><button className="vui-secondary" type="button" onClick={()=>setEditing("")}>Thu gọn</button></div>
       <Fields key={item.id} fields={fields} record={item} change={(key,value)=>change(item.id,key,value)} report={report} lock={lock}/>
+      {publishItem && <button type="button" onClick={()=>publishItem(item)} disabled={!itemChanged?.(item)}>Lưu mục này</button>}
     </section>}
     {!items.length && <p>Chưa có mục nào.</p>}
     <ul className="vui-list">{items.map((entry,index)=><li key={entry.id}>
@@ -196,6 +200,7 @@ export function Admin({ authenticated, configured }: {authenticated:boolean;conf
   const [mediaMode,setMediaMode] = useState<"media"|"gallery">("media");
   const [pageMode,setPageMode] = useState<"visibility"|"blocks">("visibility");
   const [state,setState] = useState<AdminData|null>(null), [busy,setBusy] = useState(false), [uploading,setUploading] = useState(false);
+  const published = useRef<SiteContent|null>(null);
   const [notice,setNotice] = useState<Notice|null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const report = useRef((text:string,error=false)=>{
@@ -207,7 +212,10 @@ export function Admin({ authenticated, configured }: {authenticated:boolean;conf
   const section = tab === "media" ? mediaMode : tab === "page" ? pageMode : tab === "leads" ? null : tab;
 
   useEffect(()=>{
-    if (authenticated) api<AdminData>("").then(setState).catch(error=>report(message(error),true));
+    if (authenticated) api<AdminData>("").then(result=>{
+      published.current = structuredClone(result.data);
+      setState(result);
+    }).catch(error=>report(message(error),true));
     return ()=>{if(timer.current)clearTimeout(timer.current);};
   },[authenticated,report]);
   useEffect(()=>{
@@ -229,8 +237,46 @@ export function Admin({ authenticated, configured }: {authenticated:boolean;conf
     try {
       const data = section === "contact" ? {...state.data.contact,ticker:state.data.contact.ticker.map(line=>line.trim()).filter(Boolean)} : state.data[section];
       const saved=await api<{data:unknown;revision:number}>("","PUT",{section,data,revision:state.revisions[section]});
+      if (published.current) Object.assign(published.current, { [section]: saved.data });
       setState(current=>current && ({data:{...current.data,[section]:saved.data},revisions:{...current.revisions,[section]:saved.revision}}));
       setDirty(keys=>{const next=new Set(keys);next.delete(section);return next;});report("Đã lưu và xuất bản.");
+    } catch(error){report(message(error),true);} finally{setBusy(false);}
+  }
+
+  async function saveImage(path: MediaImagePath) {
+    if (!state || !published.current || busy || uploading) return;
+    const value = mediaImageValue(state.data.media, path);
+    setBusy(true);
+    report("Đang lưu ảnh…");
+    try {
+      const saved = await api<{value:string;revision:number}>("?action=media-image","PATCH",{path,value,revision:state.revisions.media});
+      published.current.media = replaceMediaImage(published.current.media,path,saved.value);
+      const next = replaceMediaImage(state.data.media,path,saved.value);
+      setState(current=>current && ({
+        data:{...current.data,media:next}, revisions:{...current.revisions,media:saved.revision}
+      }));
+      const remaining = JSON.stringify(next) !== JSON.stringify(published.current.media);
+      setDirty(keys=>{const updated=new Set(keys);if(remaining)updated.add("media");else updated.delete("media");return updated;});
+      report("Đã lưu ảnh và xuất bản.");
+    } catch(error){report(message(error),true);} finally{setBusy(false);}
+  }
+
+  async function saveGalleryItem(item: Entry) {
+    if (!state || !published.current || busy || uploading) return;
+    setBusy(true);
+    report("Đang lưu mục…");
+    try {
+      const saved = await api<{item:SiteContent["gallery"][number];revision:number}>("?action=gallery-item","PATCH",{item,revision:state.revisions.gallery});
+      const update = (items:SiteContent["gallery"]) => items.some(row=>row.id===saved.item.id)
+        ? items.map(row=>row.id===saved.item.id ? saved.item : row) : [...items,saved.item];
+      published.current.gallery = update(published.current.gallery);
+      const next = update(state.data.gallery);
+      setState(current=>current && ({
+        data:{...current.data,gallery:next}, revisions:{...current.revisions,gallery:saved.revision}
+      }));
+      const remaining = JSON.stringify(next) !== JSON.stringify(published.current.gallery);
+      setDirty(keys=>{const updated=new Set(keys);if(remaining)updated.add("gallery");else updated.delete("gallery");return updated;});
+      report("Đã lưu mục và xuất bản.");
     } catch(error){report(message(error),true);} finally{setBusy(false);}
   }
   async function signIn(event:FormEvent<HTMLFormElement>) {
@@ -263,13 +309,23 @@ export function Admin({ authenticated, configured }: {authenticated:boolean;conf
       const listSection = section as keyof typeof listFields;
       editor = <ListEditor key={section+service} items={(section==="prices" ? state.data.prices[service] : state.data[listSection]) as Entry[]}
         fields={section==="prices" ? priceFields[service] : listFields[listSection]}
-        set={items=>change(section,section==="prices" ? {...state.data.prices,[service]:items} : items)} report={report} lock={setUploading}/>;
+        set={items=>change(section,section==="prices" ? {...state.data.prices,[service]:items} : items)} report={report} lock={setUploading}
+        publishItem={section==="gallery" ? saveGalleryItem : undefined}
+        itemChanged={section==="gallery" ? item=>JSON.stringify(item)!==JSON.stringify(published.current?.gallery.find(row=>row.id===item.id)) : undefined}/>;
+    } else if (section === "media") {
+      editor = <div className="vui-fields">{[
+        ...mediaFields.map(field=>({path:field.key as MediaImagePath,label:field.label,optional:field.optional})),
+        ...services.map(id=>({path:("products."+id) as MediaImagePath,label:"Ảnh "+serviceNames[id],optional:false}))
+      ].map(field=><ImageField key={field.path} label={field.label} optional={field.optional}
+        value={mediaImageValue(state.data.media,field.path)}
+        change={value=>change("media",replaceMediaImage(state.data.media,field.path,value))}
+        publish={()=>saveImage(field.path)}
+        canPublish={Boolean(published.current && mediaImageValue(state.data.media,field.path)!==mediaImageValue(published.current.media,field.path))}
+        report={report} lock={setUploading}/>)}</div>;
     } else {
       const record = state.data[section] as RecordData;
       editor = <>
         <Fields fields={fields} record={record} change={(key,value)=>change(section,{...record,[key]:value === undefined && key === "email" ? "" : value})} report={report} lock={setUploading}/>
-        {section==="media" && <Fields fields={services.map(key=>({key,label:"Ảnh "+serviceNames[key],kind:"image"}))} record={state.data.media.products}
-          change={(key,value)=>change(section,{...record,products:{...state.data.media.products,[key]:value}})} report={report} lock={setUploading}/>}
       </>;
     }
   }
@@ -287,7 +343,7 @@ export function Admin({ authenticated, configured }: {authenticated:boolean;conf
             {tab==="page" && <label className="vui-field vui-picker">Quản lý trang khách<select value={pageMode} disabled={uploading} onChange={e=>setPageMode(e.target.value as typeof pageMode)}><option value="visibility">Ẩn/hiện khu vực</option><option value="blocks">Khối nội dung</option></select></label>}
             {tab==="prices" && <label className="vui-field vui-picker">Dịch vụ<select value={service} onChange={e=>setService(e.target.value as Service)}>{services.map(id=><option key={id} value={id}>{serviceNames[id]}</option>)}</select></label>}
             {editor}
-            <div className="vui-save"><button type="submit" disabled={busy || uploading || !dirty.has(section)}>{busy ? "Đang lưu…" : "Lưu và xuất bản"}</button>{dirty.has(section) && <small>Có thay đổi chưa xuất bản</small>}</div>
+            {section!=="media" && <div className="vui-save"><button type="submit" disabled={busy || uploading || !dirty.has(section)}>{busy ? "Đang lưu…" : section==="gallery" ? "Lưu danh sách" : "Lưu và xuất bản"}</button>{dirty.has(section) && <small>Có thay đổi chưa xuất bản</small>}</div>}
           </fieldset>
         </form> : <p>Đang tải nội dung…</p>}
       </div>
