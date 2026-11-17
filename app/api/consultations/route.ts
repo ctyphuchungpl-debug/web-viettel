@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { z } from "zod";
-import { phoneDigits, phoneValid, serviceNames, services } from "../../../lib/site-data";
+import { isPriceService, phoneDigits, phoneValid } from "../../../lib/site-data";
 import { readContent, sql } from "../../../server/db";
 import { body, failure, HttpError, limit, sameOrigin } from "../../../server/http";
 
@@ -9,8 +9,8 @@ export const maxDuration = 45;
 const schema = z.object({
   id: z.string().uuid(), name: z.string().trim().min(2).max(180), phone: z.string().trim().max(35).refine(phoneValid),
   email: z.union([z.literal(""), z.string().trim().email().max(150)]), company: z.string().trim().max(150),
-  note: z.string().trim().max(2000), products: z.array(z.enum([...services,"other"])).min(1).max(6),
-  quotes: z.array(z.object({ service: z.enum(services), id: z.string().max(80) })).max(5),
+  note: z.string().trim().max(2000), products: z.array(z.string().regex(/^[A-Za-z0-9_-]{1,80}$/)).min(1).max(100),
+  quotes: z.array(z.object({ service: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/), id: z.string().max(80) })).max(100),
   consent: z.literal(true), website: z.string().max(0)
 });
 type MailStatus = "sent" | "failed" | "unconfigured" | "skipped";
@@ -47,16 +47,19 @@ export async function POST(request: Request) {
     await limit(request, "lead", 8, 600);
     const { data } = await readContent();
     const selected = [...new Set(input.products)];
+    const catalog=new Map(data.serviceCatalog.filter(item=>item.enabled).map(item=>[item.id,item]));
+    if(selected.some(id=>id!=="other"&&!catalog.has(id)))throw new HttpError(409,"Dịch vụ đã thay đổi. Vui lòng tải lại trang.");
     const seen = new Set<string>();
     const snapshots = input.quotes.map(quote => {
-      const item = data.prices[quote.service].find(row => row.id === quote.id && row.enabled);
+      const item = isPriceService(quote.service) ? data.prices[quote.service].find(row => row.id === quote.id && row.enabled)
+        : data.customPlans.find(row=>row.serviceId===quote.service&&row.id===quote.id&&row.enabled);
       if (!item || seen.has(quote.service) || !selected.includes(quote.service)) {
         throw new HttpError(409, "Gói đã thay đổi. Vui lòng tải lại trang và chọn lại.");
       }
       seen.add(quote.service);
-      return { ...item, service: serviceNames[quote.service] };
+      return { ...item, service: catalog.get(quote.service)!.name };
     });
-    const products = selected.map(id => id === "other" ? "Cần tư vấn lựa chọn" : serviceNames[id]);
+    const products = selected.map(id => id === "other" ? "Cần tư vấn lựa chọn" : catalog.get(id)!.name);
     const [lead] = await db`INSERT INTO vui_leads (id, name, phone, email, company, note, products, quotes, customer_email)
       VALUES (${input.id}, ${input.name}, ${phoneDigits(input.phone)}, ${input.email}, ${input.company}, ${input.note},
         ${JSON.stringify(products)}::jsonb, ${JSON.stringify(snapshots)}::jsonb, ${input.email ? "pending" : "skipped"})

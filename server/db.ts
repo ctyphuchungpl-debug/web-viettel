@@ -32,7 +32,7 @@ export async function initialize() {
 
 export async function readContent() {
   const data = structuredClone(defaults);
-  const revisions = {} as Record<ContentKey, number>;
+  const revisions = Object.fromEntries(Object.keys(defaults).map(key=>[key,0])) as Record<ContentKey,number>;
   if (!process.env.DATABASE_URL) return { data, revisions };
   const rows = await sql()`SELECT section, data, revision FROM vui_content`;
   for (const row of rows) {
@@ -40,6 +40,12 @@ export async function readContent() {
     const section = row.section as ContentKey;
     Object.assign(data, { [section]: row.data as SiteContent[typeof section] });
     revisions[section] = row.revision;
+  }
+  for (const [page, sections] of Object.entries(defaults.pageContent)) {
+    for (const [section, fields] of Object.entries(sections)) {
+      data.pageContent[page] ??= {};
+      data.pageContent[page][section] = {...fields,...data.pageContent[page][section]};
+    }
   }
   return { data, revisions };
 }

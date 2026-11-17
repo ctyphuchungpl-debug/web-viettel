@@ -1,6 +1,6 @@
 # Website Viettel Phan Hà Thị Vui
 
-Bản Next.js riêng từ mã nguồn đã cung cấp. Giao diện công khai gồm 10 trang và bảng giá Tendoo dạng popup. /admin có Liên hệ, Ảnh & poster, Gói cước, Video, FAQ, Trang khách và Yêu cầu tư vấn.
+Bản Next.js riêng từ mã nguồn đã cung cấp. Giao diện công khai gồm 10 trang và bảng giá Tendoo dạng popup. /admin có Liên hệ, Ảnh & poster, Dịch vụ, Gói cước, Video, FAQ, Trang khách và Yêu cầu tư vấn.
 
 ## Chạy local
 
@@ -24,6 +24,14 @@ Lệnh khởi tạo có thể chạy lại và giữ nguyên các mục đã ch�
 - Trong **Ảnh & poster → Ảnh website**, mỗi ảnh có nút **Lưu ảnh này**. Trong **Thư viện ảnh**, dùng **Lưu mục này** khi sửa một mục. Nút **Lưu danh sách** áp dụng thêm thay đổi về thứ tự, ẩn hoặc xóa trong thư viện.
 - Điền địa chỉ **Email nhận tư vấn** trong **Admin → Liên hệ**. Xác minh tên miền gửi trên Resend và đặt RESEND_API_KEY, RESEND_FROM_EMAIL. Yêu cầu được lưu trước khi gửi email. Admin hiển thị kết quả gửi riêng cho chuyên viên và khách. Khách được gửi xác nhận nếu nhập email.
 - Các nút ẩn và xóa áp dụng khi bấm **Lưu và xuất bản**. Kiểm tra giá theo bảng của Viettel trước khi công bố. Trong bản gốc, tên VCONT_10K nói 10.000 hợp đồng nhưng trường số lượng là 0. Dữ liệu đó giữ ghi chú cần xác nhận.
+
+## Quản lý nội dung
+
+- Liên hệ và các công tắc hiển thị có nút lưu riêng từng trường. Trong các danh sách, mở Sửa rồi chọn **Lưu mục này** để xuất bản đúng mục đó. **Lưu danh sách** dùng khi thay đổi thứ tự, ẩn hoặc xóa. Trong Gói cước, nút này áp dụng cho dịch vụ đang chọn.
+- Chọn **Trang khách → Nội dung từng trang**, chọn trang và phần nội dung để sửa tiêu đề, đoạn văn, nhãn hoặc nội dung thẻ. Nút **Lưu phần nội dung này** xuất bản khu đang sửa và giữ các bản nháp ở khu khác.
+- Trong **Dịch vụ**, thêm tên, đường dẫn, giới thiệu, lợi ích, ảnh và nội dung chi tiết để tạo trang tại **/dich-vu/đường-dẫn**. Sửa nội dung của năm trang dịch vụ gốc qua **Trang khách → Nội dung từng trang**.
+- Dịch vụ mới có bảng gói cước đơn giản gồm tên, giá, thời hạn, thuế và chi tiết. Chọn dịch vụ đó trong mục Gói cước để thêm gói. Dịch vụ bị ẩn hoặc xóa sẽ được bỏ khỏi trang khách, lựa chọn tư vấn và trang chi tiết.
+- Bản cập nhật dùng dữ liệu hiện có. Các nhóm nội dung mới được lưu từ lần xuất bản đầu tiên và vẫn giữ dữ liệu đã chỉnh khi chạy lại db:init.
 
 ## Vercel Preview riêng tư
 

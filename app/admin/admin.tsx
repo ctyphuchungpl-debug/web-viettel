@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { contactFields, listFields, mediaFields, priceFields, visibilityFields, type Field } from "../../lib/admin-fields";
-import { mediaImageValue, replaceMediaImage, serviceNames, services, type ContentKey, type MediaImagePath, type Service, type SiteContent } from "../../lib/site-data";
+import { catalogFields, contactFields, customPlanFields, listFields, mediaFields, priceFields, visibilityFields, type Field } from "../../lib/admin-fields";
+import { isPriceService, mediaImageValue, replaceMediaImage, serviceNames, services, type ContentKey, type MediaImagePath, type Service, type SiteContent } from "../../lib/site-data";
+
+import { pageCopyLabels } from "../../lib/page-copy";
 
 type Notice = { text: string; error: boolean };
 type Entry = { id: string; enabled: boolean } & Record<string, unknown>;
@@ -11,7 +13,7 @@ type Lead = {
   id:string; name:string; phone:string; email:string; company:string; note:string; products:string[];
   quotes:{service:string;name:string;price:number|null}[]; status:string; owner_email:string;customer_email:string;created_at:string;
 };
-const tabs = { contact:"Liên hệ", media:"Ảnh & poster", prices:"Gói cước", videos:"Video", faq:"FAQ", page:"Trang khách", leads:"Yêu cầu tư vấn" } as const;
+const tabs = { contact:"Liên hệ", media:"Ảnh & poster", prices:"Gói cước", videos:"Video", faq:"FAQ", serviceCatalog:"Dịch vụ", page:"Trang khách", leads:"Yêu cầu tư vấn" } as const;
 type Tab = keyof typeof tabs;
 const leadStatus: Record<string,string> = { new:"Mới", contacted:"Đã liên hệ", closed:"Đã xử lý" };
 const mailStatus: Record<string,string> = { pending:"Đang gửi",sent:"Đã gửi",failed:"Gửi lỗi",unconfigured:"Chưa cấu hình",skipped:"Không có email" };
@@ -97,14 +99,16 @@ function ImageField({ label, value, optional, change, report, lock, publish, can
   </div>;
 }
 
-function Fields({ fields, record, change, report, lock }: {
+function Fields({ fields, record, change, report, lock, publishField, fieldChanged }: {
   fields:Field[];record:RecordData;change:(key:string,value:unknown)=>void;report:(text:string,error?:boolean)=>void;lock:(pending:boolean)=>void;
+  publishField?:(key:string)=>void;fieldChanged?:(key:string)=>boolean;
 }) {
   return <div className="vui-fields">{fields.map(field => {
     const value = record[field.key];
     if (field.kind === "image") return <ImageField key={field.key} label={field.label} value={String(value ?? "")}
-      optional={field.optional} change={value=>change(field.key,value)} report={report} lock={lock}/>;
-    if (field.kind === "check") return <label key={field.key} className="vui-check"><input type="checkbox" checked={Boolean(value)} onChange={e=>change(field.key,e.target.checked)}/>{field.label}</label>;
+      optional={field.optional} change={value=>change(field.key,value)} report={report} lock={lock}
+      publish={publishField?()=>publishField(field.key):undefined} canPublish={fieldChanged?.(field.key)}/>;
+    if (field.kind === "check") return <div key={field.key}><label className="vui-check"><input type="checkbox" aria-label={field.label} checked={Boolean(value)} onChange={e=>change(field.key,e.target.checked)}/>{field.label}</label>{publishField&&<button type="button" onClick={()=>publishField(field.key)} disabled={!fieldChanged?.(field.key)} aria-label={"Lưu "+field.label}>Lưu phần này</button>}</div>;
     const set = (input:string) => {
       if (field.kind === "lines") change(field.key,input.split("\n"));
       else if (field.kind === "number") change(field.key,input === "" ? field.nullable ? null : undefined : Number(input));
@@ -112,19 +116,20 @@ function Fields({ fields, record, change, report, lock }: {
     };
     return <label key={field.key} className={"vui-field" + (field.kind === "lines" || field.kind === "area" ? " vui-wide" : "")}>
       {field.label}
-      {field.kind === "select" ? <select value={String(value ?? "")} onChange={e=>set(e.target.value)}>
+      {field.kind === "select" ? <select aria-label={field.label} value={String(value ?? "")} onChange={e=>set(e.target.value)}>
         {field.optional && <option value="">—</option>}{field.options?.map(([key,text])=><option key={key} value={key}>{text}</option>)}
-      </select> : field.kind === "area" || field.kind === "lines" ? <textarea rows={4}
+      </select> : field.kind === "area" || field.kind === "lines" ? <textarea aria-label={field.label} rows={4}
         value={Array.isArray(value) ? value.join("\n") : String(value ?? "")} onChange={e=>set(e.target.value)}/>
-      : <input type={field.kind === "number" ? "number" : field.key === "email" ? "email" : "text"} min={field.kind === "number" ? 0 : undefined}
+      : <input aria-label={field.label} type={field.kind === "number" ? "number" : field.key === "email" ? "email" : "text"} min={field.kind === "number" ? 0 : undefined}
         value={String(value ?? "")} onChange={e=>set(e.target.value)}/>}
+      {publishField&&<button type="button" onClick={()=>publishField(field.key)} disabled={!fieldChanged?.(field.key)} aria-label={"Lưu "+field.label}>Lưu phần này</button>}
     </label>;
   })}</div>;
 }
 
-function ListEditor({ items, fields, set, report, lock, publishItem, itemChanged }: {
+function ListEditor({ items, fields, set, report, lock, publishItem, itemChanged, editFields }: {
   items:Entry[];fields:Field[];set:(items:Entry[])=>void;report:(text:string,error?:boolean)=>void;lock:(pending:boolean)=>void;
-  publishItem?:(item:Entry)=>void;itemChanged?:(item:Entry)=>boolean;
+  publishItem?:(item:Entry)=>void;itemChanged?:(item:Entry)=>boolean;editFields?:(item:Entry)=>Field[];
 }) {
   const [editing,setEditing] = useState("");
   const item = items.find(entry=>entry.id === editing);
@@ -140,7 +145,7 @@ function ListEditor({ items, fields, set, report, lock, publishItem, itemChanged
     <button type="button" onClick={()=>{const row=fresh(fields);set([...items,row]);setEditing(row.id);}}>Thêm mới</button>
     {item && <section className="vui-row-editor" aria-label="Chỉnh sửa mục">
       <div className="vui-toolbar"><h2>{labelOf(item)}</h2><button className="vui-secondary" type="button" onClick={()=>setEditing("")}>Thu gọn</button></div>
-      <Fields key={item.id} fields={fields} record={item} change={(key,value)=>change(item.id,key,value)} report={report} lock={lock}/>
+      <Fields key={item.id} fields={editFields?editFields(item):fields} record={item} change={(key,value)=>change(item.id,key,value)} report={report} lock={lock}/>
       {publishItem && <button type="button" onClick={()=>publishItem(item)} disabled={!itemChanged?.(item)}>Lưu mục này</button>}
     </section>}
     {!items.length && <p>Chưa có mục nào.</p>}
@@ -195,27 +200,31 @@ function Leads({ report }: { report:(text:string,error?:boolean)=>void }) {
   </>;
 }
 
+type PatchResult = { revision:number;item?:Entry;items?:Entry[];value?:unknown;data?:Record<string,string> };
+type ListSection = "gallery"|"videos"|"faq"|"blocks"|"prices"|"customPlans"|"serviceCatalog";
+
 export function Admin({ authenticated, configured }: {authenticated:boolean;configured:boolean}) {
-  const [tab,setTab] = useState<Tab>("contact"), [service,setService] = useState<Service>("tendoo");
+  const [tab,setTab] = useState<Tab>("contact"), [service,setService] = useState("tendoo");
   const [mediaMode,setMediaMode] = useState<"media"|"gallery">("media");
-  const [pageMode,setPageMode] = useState<"visibility"|"blocks">("visibility");
+  const [pageMode,setPageMode] = useState<"visibility"|"blocks"|"pageContent">("visibility");
+  const [page,setPage] = useState("home"), [part,setPart] = useState("");
   const [state,setState] = useState<AdminData|null>(null), [busy,setBusy] = useState(false), [uploading,setUploading] = useState(false);
   const published = useRef<SiteContent|null>(null);
   const [notice,setNotice] = useState<Notice|null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const report = useRef((text:string,error=false)=>{
     if (timer.current) clearTimeout(timer.current);
-    setNotice({text,error});
-    timer.current=setTimeout(()=>setNotice(null),10_000);
+    setNotice({text,error});timer.current=setTimeout(()=>setNotice(null),10_000);
   }).current;
   const [dirty,setDirty] = useState<Set<ContentKey>>(new Set());
-  const section = tab === "media" ? mediaMode : tab === "page" ? pageMode : tab === "leads" ? null : tab;
+  const chosenService = state?.data.serviceCatalog.find(item=>item.id===service) ?? state?.data.serviceCatalog[0];
+  const serviceId = chosenService?.id ?? service;
+  const section:ContentKey|null = tab === "media" ? mediaMode : tab === "page" ? pageMode
+    : tab === "leads" ? null : tab === "prices" && !isPriceService(serviceId) ? "customPlans" : tab;
+  const partId = Object.hasOwn(pageCopyLabels[page].sections,part) ? part : Object.keys(pageCopyLabels[page].sections)[0];
 
   useEffect(()=>{
-    if (authenticated) api<AdminData>("").then(result=>{
-      published.current = structuredClone(result.data);
-      setState(result);
-    }).catch(error=>report(message(error),true));
+    if (authenticated) api<AdminData>("").then(result=>{published.current=structuredClone(result.data);setState(result);}).catch(error=>report(message(error),true));
     return ()=>{if(timer.current)clearTimeout(timer.current);};
   },[authenticated,report]);
   useEffect(()=>{
@@ -225,128 +234,153 @@ export function Admin({ authenticated, configured }: {authenticated:boolean;conf
     return ()=>window.removeEventListener("beforeunload",warn);
   },[dirty]);
 
-  function change(key:ContentKey, value:unknown) {
+  function change(key:ContentKey,value:unknown) {
     setState(current=>current && ({...current,data:{...current.data,[key]:value}}));
     setDirty(keys=>new Set(keys).add(key));
   }
-
+  function setDirtyState(key:ContentKey,next:unknown) {
+    const pending=JSON.stringify(next)!==JSON.stringify(published.current?.[key]);
+    setDirty(keys=>{const updated=new Set(keys);if(pending)updated.add(key);else updated.delete(key);return updated;});
+  }
+  async function partial<K extends ContentKey>(key:K,action:string,payload:RecordData,apply:(data:SiteContent[K],result:PatchResult)=>SiteContent[K]) {
+    if(!state||!published.current||busy||uploading)return;
+    setBusy(true);report("Đang lưu phần nội dung…");
+    try {
+      const saved=await api<PatchResult>("?action="+action,"PATCH",{...payload,revision:state.revisions[key]});
+      published.current[key]=apply(published.current[key],saved);
+      const next=apply(state.data[key],saved);
+      setState(current=>current && ({data:{...current.data,[key]:next},revisions:{...current.revisions,[key]:saved.revision}}));
+      setDirtyState(key,next);report("Đã lưu phần này và xuất bản.");
+    }catch(error){report(message(error),true);}finally{setBusy(false);}
+  }
   async function save(event:FormEvent) {
     event.preventDefault();
-    if (!section || !state || busy || uploading) return;
+    if(!section||!state||busy||uploading)return;
+    if (section === "prices") {
+      return partial(section, "price-list", { service: serviceId, items: rows(state.data, section) },
+        (data, saved) => ({ ...data, [serviceId]: saved.items }));
+    }
+    if (section === "customPlans") {
+      return partial(section, "price-list", { service: serviceId, items: rows(state.data, section) },
+        (data, saved) => [...data.filter(item => item.serviceId !== serviceId), ...saved.items as SiteContent["customPlans"]]);
+    }
     setBusy(true);
-    try {
-      const data = section === "contact" ? {...state.data.contact,ticker:state.data.contact.ticker.map(line=>line.trim()).filter(Boolean)} : state.data[section];
-      const saved=await api<{data:unknown;revision:number}>("","PUT",{section,data,revision:state.revisions[section]});
-      if (published.current) Object.assign(published.current, { [section]: saved.data });
-      setState(current=>current && ({data:{...current.data,[section]:saved.data},revisions:{...current.revisions,[section]:saved.revision}}));
-      setDirty(keys=>{const next=new Set(keys);next.delete(section);return next;});report("Đã lưu và xuất bản.");
-    } catch(error){report(message(error),true);} finally{setBusy(false);}
+    try{
+      const saved=await api<{data:unknown;revision:number}>("","PUT",{section,data:state.data[section],revision:state.revisions[section]});
+      if(published.current)Object.assign(published.current,{[section]:saved.data});
+      setState(current=>current&&({data:{...current.data,[section]:saved.data},revisions:{...current.revisions,[section]:saved.revision}}));
+      setDirty(keys=>{const next=new Set(keys);next.delete(section);return next;});report("Đã lưu danh sách và xuất bản.");
+    }catch(error){report(message(error),true);}finally{setBusy(false);}
   }
-
-  async function saveImage(path: MediaImagePath) {
-    if (!state || !published.current || busy || uploading) return;
-    const value = mediaImageValue(state.data.media, path);
-    setBusy(true);
-    report("Đang lưu ảnh…");
-    try {
-      const saved = await api<{value:string;revision:number}>("?action=media-image","PATCH",{path,value,revision:state.revisions.media});
-      published.current.media = replaceMediaImage(published.current.media,path,saved.value);
-      const next = replaceMediaImage(state.data.media,path,saved.value);
-      setState(current=>current && ({
-        data:{...current.data,media:next}, revisions:{...current.revisions,media:saved.revision}
-      }));
-      const remaining = JSON.stringify(next) !== JSON.stringify(published.current.media);
-      setDirty(keys=>{const updated=new Set(keys);if(remaining)updated.add("media");else updated.delete("media");return updated;});
-      report("Đã lưu ảnh và xuất bản.");
-    } catch(error){report(message(error),true);} finally{setBusy(false);}
+  const saveImage=(path:MediaImagePath)=>state&&partial("media","media-image",{path,value:mediaImageValue(state.data.media,path)},
+    (data,saved)=>replaceMediaImage(data,path,saved.value as string));
+  function saveField(key:string){
+    if(!state||(section!=="contact"&&section!=="visibility"))return;
+    let value=(state.data[section] as RecordData)[key];
+    if(key==="ticker"&&Array.isArray(value))value=value.map(line=>String(line).trim()).filter(Boolean);
+    return partial(section,"field",{section,key,value},(data,saved)=>({...data,[key]:saved.value}));
   }
-
-  async function saveGalleryItem(item: Entry) {
-    if (!state || !published.current || busy || uploading) return;
-    setBusy(true);
-    report("Đang lưu mục…");
-    try {
-      const saved = await api<{item:SiteContent["gallery"][number];revision:number}>("?action=gallery-item","PATCH",{item,revision:state.revisions.gallery});
-      const update = (items:SiteContent["gallery"]) => items.some(row=>row.id===saved.item.id)
-        ? items.map(row=>row.id===saved.item.id ? saved.item : row) : [...items,saved.item];
-      published.current.gallery = update(published.current.gallery);
-      const next = update(state.data.gallery);
-      setState(current=>current && ({
-        data:{...current.data,gallery:next}, revisions:{...current.revisions,gallery:saved.revision}
-      }));
-      const remaining = JSON.stringify(next) !== JSON.stringify(published.current.gallery);
-      setDirty(keys=>{const updated=new Set(keys);if(remaining)updated.add("gallery");else updated.delete("gallery");return updated;});
-      report("Đã lưu mục và xuất bản.");
-    } catch(error){report(message(error),true);} finally{setBusy(false);}
+  function rows(data:SiteContent,key:ListSection):Entry[]{
+    if(key==="prices")return data.prices[serviceId as Service] as Entry[];
+    if(key==="customPlans")return data.customPlans.filter(item=>item.serviceId===serviceId) as Entry[];
+    return data[key] as Entry[];
   }
-  async function signIn(event:FormEvent<HTMLFormElement>) {
+  function replaceRow(items:Entry[],item:Entry){
+    return items.some(row=>row.id===item.id)?items.map(row=>row.id===item.id?item:row):[...items,item];
+  }
+  function saveItem(key:ListSection,item:Entry){
+    const record=key==="customPlans"?{...item,serviceId}:item;
+    return partial(key,"item",{section:key,item:record,...(key==="prices"?{service:serviceId}:{})},(data,saved)=>{
+      if(key==="prices"){
+        const prices=data as SiteContent["prices"];
+        return {...prices,[serviceId]:replaceRow(prices[serviceId as Service] as Entry[],saved.item!)} as typeof data;
+      }
+      return replaceRow(data as Entry[],saved.item!) as typeof data;
+    });
+  }
+  function setRows(key:ListSection,items:Entry[]){
+    if(!state)return;
+    if(key==="prices")return change(key,{...state.data.prices,[serviceId]:items});
+    if(key==="customPlans")return change(key,[...state.data.customPlans.filter(item=>item.serviceId!==serviceId),...items.map(item=>({...item,serviceId}))]);
+    change(key,items);
+  }
+  async function signIn(event:FormEvent<HTMLFormElement>){
     event.preventDefault();setBusy(true);
-    try {await api("?action=login","POST",Object.fromEntries(new FormData(event.currentTarget)));location.reload();}
+    try{await api("?action=login","POST",Object.fromEntries(new FormData(event.currentTarget)));location.reload();}
     catch(error){report(message(error),true);setBusy(false);}
   }
-  async function logout() {
-    if (dirty.size && !confirm("Đăng xuất và bỏ thay đổi chưa lưu?")) return;
-    try {await api("?action=logout","POST",{});setDirty(new Set());setTimeout(()=>location.reload(),0);}
+  async function logout(){
+    if(dirty.size&&!confirm("Đăng xuất và bỏ thay đổi chưa lưu?"))return;
+    try{await api("?action=logout","POST",{});setDirty(new Set());setTimeout(()=>location.reload(),0);}
     catch(error){report(message(error),true);}
   }
-
-  const toast = <p className={"vui-toast" + (notice?.error ? " vui-toast-error" : "")} role="status">{notice?.text}</p>;
-  if (!authenticated) return <main className="vui-admin vui-login">
-    <form className="vui-panel" method="post" onSubmit={signIn}>
-      <a href="/">← Trang khách</a><h1>Đăng nhập quản trị</h1>
-      {!configured ? <p>Chưa cấu hình Neon và tài khoản quản trị. Xem README để thiết lập.</p> : <>
-        <label className="vui-field">Tài khoản<input name="username" autoComplete="username" required maxLength={120}/></label>
-        <label className="vui-field">Mật khẩu<input name="password" type="password" autoComplete="current-password" required maxLength={200}/></label>
-        <button disabled={busy}>{busy ? "Đang đăng nhập…" : "Đăng nhập"}</button>
-      </>}
-    </form>{toast}
-  </main>;
+  const toast=<p className={"vui-toast"+(notice?.error?" vui-toast-error":"")} role="status">{notice?.text}</p>;
+  if(!authenticated)return <main className="vui-admin vui-login"><form className="vui-panel" method="post" onSubmit={signIn}>
+    <a href="/">← Trang khách</a><h1>Đăng nhập quản trị</h1>{!configured?<p>Chưa cấu hình Neon và tài khoản quản trị. Xem README để thiết lập.</p>:<>
+      <label className="vui-field">Tài khoản<input name="username" autoComplete="username" required maxLength={120}/></label>
+      <label className="vui-field">Mật khẩu<input name="password" type="password" autoComplete="current-password" required maxLength={200}/></label>
+      <button disabled={busy}>{busy?"Đang đăng nhập…":"Đăng nhập"}</button>
+    </>}</form>{toast}</main>;
 
   let editor:React.ReactNode;
-  if (section && state) {
-    const fields = section === "contact" ? contactFields : section === "media" ? mediaFields : visibilityFields;
-    if (section === "prices" || Object.hasOwn(listFields,section)) {
-      const listSection = section as keyof typeof listFields;
-      editor = <ListEditor key={section+service} items={(section==="prices" ? state.data.prices[service] : state.data[listSection]) as Entry[]}
-        fields={section==="prices" ? priceFields[service] : listFields[listSection]}
-        set={items=>change(section,section==="prices" ? {...state.data.prices,[service]:items} : items)} report={report} lock={setUploading}
-        publishItem={section==="gallery" ? saveGalleryItem : undefined}
-        itemChanged={section==="gallery" ? item=>JSON.stringify(item)!==JSON.stringify(published.current?.gallery.find(row=>row.id===item.id)) : undefined}/>;
-    } else if (section === "media") {
-      editor = <div className="vui-fields">{[
-        ...mediaFields.map(field=>({path:field.key as MediaImagePath,label:field.label,optional:field.optional})),
-        ...services.map(id=>({path:("products."+id) as MediaImagePath,label:"Ảnh "+serviceNames[id],optional:false}))
-      ].map(field=><ImageField key={field.path} label={field.label} optional={field.optional}
-        value={mediaImageValue(state.data.media,field.path)}
-        change={value=>change("media",replaceMediaImage(state.data.media,field.path,value))}
-        publish={()=>saveImage(field.path)}
-        canPublish={Boolean(published.current && mediaImageValue(state.data.media,field.path)!==mediaImageValue(published.current.media,field.path))}
-        report={report} lock={setUploading}/>)}</div>;
-    } else {
-      const record = state.data[section] as RecordData;
-      editor = <>
-        <Fields fields={fields} record={record} change={(key,value)=>change(section,{...record,[key]:value === undefined && key === "email" ? "" : value})} report={report} lock={setUploading}/>
+  const listSection=section&&["prices","customPlans","serviceCatalog",...Object.keys(listFields)].includes(section)?section as ListSection:null;
+  if(section&&state){
+    if(section==="pageContent"){
+      const metadata=pageCopyLabels[page].sections[partId];
+      const record=state.data.pageContent[page][partId];
+      const changed=JSON.stringify(record)!==JSON.stringify(published.current?.pageContent[page][partId]);
+      editor=<>
+        <label className="vui-field vui-picker">Trang<select aria-label="Trang" value={page} onChange={e=>{setPage(e.target.value);setPart("");}}>
+          {Object.entries(pageCopyLabels).map(([key,item])=><option key={key} value={key}>{item.title}</option>)}
+        </select></label>
+        <label className="vui-field vui-picker">Phần nội dung<select aria-label="Phần nội dung" value={partId} onChange={e=>setPart(e.target.value)}>
+          {Object.entries(pageCopyLabels[page].sections).map(([key,item])=><option key={key} value={key}>{item.label}</option>)}
+        </select></label>
+        <Fields fields={Object.entries(metadata.fields).map(([key,label])=>({key,label,kind:record[key].length>100?"area":"text"}))}
+          record={record} change={(key,value)=>change("pageContent",{...state.data.pageContent,[page]:{...state.data.pageContent[page],[partId]:{...record,[key]:value}}})}
+          report={report} lock={setUploading}/>
+        <button type="button" disabled={!changed} onClick={()=>partial("pageContent","page-section",{page,part:partId,data:record},
+          (data,saved)=>({...data,[page]:{...data[page],[partId]:saved.data!}}))}>Lưu phần nội dung này</button>
       </>;
+    }else if(listSection){
+      let fields=listSection==="prices"?priceFields[serviceId as Service]:listSection==="customPlans"?customPlanFields:listSection==="serviceCatalog"?catalogFields:listFields[listSection];
+      fields=fields.map(field=>field.key==="service"?{...field,options:[["","Nội dung chung"],...state.data.serviceCatalog.map(item=>[item.id,item.name])] as [string,string][]}:field);
+      editor=tab==="prices"&&!chosenService?<p>Thêm dịch vụ trước khi quản lý gói cước.</p>:<ListEditor key={section+serviceId}
+        items={rows(state.data,listSection)} fields={fields} set={items=>setRows(listSection,items)} report={report} lock={setUploading}
+        publishItem={item=>saveItem(listSection,item)}
+        itemChanged={item=>JSON.stringify(item)!==JSON.stringify(published.current&&rows(published.current,listSection).find(row=>row.id===item.id))}
+        editFields={listSection==="serviceCatalog"?item=>isPriceService(item.id)?fields.filter(field=>!["slug","image","logo","detailTitle","detailIntro","detailContent"].includes(field.key)):fields:undefined}/>;
+    }else if(section==="media"){
+      editor=<div className="vui-fields">{[
+        ...mediaFields.map(field=>({path:field.key as MediaImagePath,label:field.label,optional:field.optional})),
+        ...services.map(id=>({path:("products."+id) as MediaImagePath,label:"Ảnh "+(state.data.serviceCatalog.find(item=>item.id===id)?.name||serviceNames[id]),optional:false}))
+      ].map(field=><ImageField key={field.path} label={field.label} optional={field.optional} value={mediaImageValue(state.data.media,field.path)}
+        change={value=>change("media",replaceMediaImage(state.data.media,field.path,value))} publish={()=>saveImage(field.path)}
+        canPublish={Boolean(published.current&&mediaImageValue(state.data.media,field.path)!==mediaImageValue(published.current.media,field.path))} report={report} lock={setUploading}/>)}</div>;
+    }else{
+      const record=state.data[section] as RecordData;
+      editor=<Fields fields={section==="contact"?contactFields:visibilityFields} record={record}
+        change={(key,value)=>change(section,{...record,[key]:value===undefined&&key==="email"?"":value})}
+        report={report} lock={setUploading} publishField={saveField}
+        fieldChanged={key=>JSON.stringify(record[key])!==JSON.stringify((published.current?.[section] as RecordData)?.[key])}/>;
     }
   }
   return <main className="vui-admin">
     <header className="vui-header"><div><strong>Viettel Đồng Nai</strong><span>Quản trị · Phan Hà Thị Vui</span></div><div className="vui-actions">
-      <a href="/" target="_blank" rel="noopener">Xem trang khách ↗</a>
-      <button type="button" className="vui-secondary" disabled={busy || uploading} onClick={logout}>Đăng xuất</button>
+      <a href="/" target="_blank" rel="noopener">Xem trang khách ↗</a><button type="button" className="vui-secondary" disabled={busy||uploading} onClick={logout}>Đăng xuất</button>
     </div></header>
     <div className="vui-layout"><nav aria-label="Mục quản trị">{Object.entries(tabs).map(([key,text])=><button key={key} type="button" className="vui-nav"
-      aria-current={tab===key ? "page" : undefined} disabled={busy || uploading} onClick={()=>setTab(key as Tab)}>{text}</button>)}</nav>
-      <div className="vui-main"><h1>{tabs[tab]}</h1>
-        {tab==="leads" ? <section className="vui-panel"><Leads report={report}/></section> : state && section ? <form className="vui-panel" onSubmit={save}>
-          <fieldset className="vui-editor" disabled={busy || uploading}>
-            {tab==="media" && <label className="vui-field vui-picker">Loại nội dung<select value={mediaMode} disabled={uploading} onChange={e=>setMediaMode(e.target.value as typeof mediaMode)}><option value="media">Ảnh website</option><option value="gallery">Thư viện ảnh</option></select></label>}
-            {tab==="page" && <label className="vui-field vui-picker">Quản lý trang khách<select value={pageMode} disabled={uploading} onChange={e=>setPageMode(e.target.value as typeof pageMode)}><option value="visibility">Ẩn/hiện khu vực</option><option value="blocks">Khối nội dung</option></select></label>}
-            {tab==="prices" && <label className="vui-field vui-picker">Dịch vụ<select value={service} onChange={e=>setService(e.target.value as Service)}>{services.map(id=><option key={id} value={id}>{serviceNames[id]}</option>)}</select></label>}
-            {editor}
-            {section!=="media" && <div className="vui-save"><button type="submit" disabled={busy || uploading || !dirty.has(section)}>{busy ? "Đang lưu…" : section==="gallery" ? "Lưu danh sách" : "Lưu và xuất bản"}</button>{dirty.has(section) && <small>Có thay đổi chưa xuất bản</small>}</div>}
-          </fieldset>
-        </form> : <p>Đang tải nội dung…</p>}
-      </div>
+      aria-current={tab===key?"page":undefined} disabled={busy||uploading} onClick={()=>setTab(key as Tab)}>{text}</button>)}</nav>
+      <div className="vui-main"><h1>{tabs[tab]}</h1>{tab==="leads"?<section className="vui-panel"><Leads report={report}/></section>:state&&section?<form className="vui-panel" onSubmit={save}>
+        <fieldset className="vui-editor" disabled={busy||uploading}>
+          {tab==="media"&&<label className="vui-field vui-picker">Loại nội dung<select value={mediaMode} onChange={e=>setMediaMode(e.target.value as typeof mediaMode)}><option value="media">Ảnh website</option><option value="gallery">Thư viện ảnh</option></select></label>}
+          {tab==="page"&&<label className="vui-field vui-picker">Quản lý trang khách<select value={pageMode} onChange={e=>setPageMode(e.target.value as typeof pageMode)}><option value="visibility">Ẩn/hiện khu vực</option><option value="pageContent">Nội dung từng trang</option><option value="blocks">Khối nội dung</option></select></label>}
+          {tab==="prices"&&<label className="vui-field vui-picker">Dịch vụ<select aria-label="Dịch vụ" value={serviceId} onChange={e=>setService(e.target.value)}>{state.data.serviceCatalog.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+          {section==="serviceCatalog"&&<p>Thêm dịch vụ mới để có trang chi tiết tại /dich-vu/đường-dẫn. Nội dung các trang hiện có được sửa trong Trang khách → Nội dung từng trang.</p>}
+          {editor}
+          {listSection&&<div className="vui-save"><button type="submit" disabled={busy||uploading||!dirty.has(section)}>{busy?"Đang lưu…":"Lưu danh sách"}</button>{dirty.has(section)&&<small>Có thay đổi chưa xuất bản</small>}</div>}
+        </fieldset>
+      </form>:<p>Đang tải nội dung…</p>}</div>
     </div>{toast}
   </main>;
 }

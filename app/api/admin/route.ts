@@ -2,7 +2,8 @@ import { cookies } from "next/headers";
 import { issueSignedToken, presignUrl } from "@vercel/blob";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
-import { contentSchemas, mediaImagePaths, replaceMediaImage, type ContentKey, type SiteContent } from "../../../lib/site-data";
+import { contentSchemas, defaults, isPriceService, mediaImagePaths, replaceMediaImage, services, type ContentKey, type SiteContent } from "../../../lib/site-data";
+import { pageCopyDefaults } from "../../../lib/page-copy";
 import { readContent, sql } from "../../../server/db";
 import { body, cookieName, failure, hash, HttpError, login, sameOrigin, session } from "../../../server/http";
 
@@ -23,9 +24,17 @@ async function requireSession() {
   return verified;
 }
 
+async function loadSection(section: ContentKey, revision: number) {
+  const [record] = await sql()`SELECT data, revision FROM vui_content WHERE section = ${section}`;
+  if ((record?.revision ?? 0) !== revision) throw new HttpError(409, "Nội dung đã thay đổi ở phiên khác. Tải lại trang rồi thử lại.");
+  return record?.data ?? structuredClone(defaults[section]);
+}
 async function saveSection(section: ContentKey, revision: number, data: unknown) {
-  const [saved] = await sql()`UPDATE vui_content SET data = ${JSON.stringify(data)}::jsonb, revision = revision + 1
-    WHERE section = ${section} AND revision = ${revision} RETURNING data, revision`;
+  const db=sql();
+  const [saved] = revision === 0
+    ? await db`INSERT INTO vui_content (section,data) VALUES (${section},${JSON.stringify(data)}::jsonb) ON CONFLICT DO NOTHING RETURNING data,revision`
+    : await db`UPDATE vui_content SET data = ${JSON.stringify(data)}::jsonb, revision = revision + 1
+      WHERE section = ${section} AND revision = ${revision} RETURNING data, revision`;
   if (!saved) throw new HttpError(409, "Nội dung đã thay đổi ở phiên khác. Tải lại trang rồi thử lại.");
   return saved;
 }
@@ -81,7 +90,7 @@ export async function PUT(request: Request) {
   try {
     sameOrigin(request);
     await requireSession();
-    const input = validate(z.object({ section: z.string(), revision: z.number().int().min(1), data: z.unknown() }), await body(request, 600_000));
+    const input = validate(z.object({ section: z.string(), revision: z.number().int().min(0), data: z.unknown() }), await body(request, 600_000));
     if (!Object.hasOwn(contentSchemas, input.section)) throw new HttpError(400, "Mục nội dung không hợp lệ.");
     const section = input.section as ContentKey;
     const clean = validate(contentSchemas[section] as z.ZodTypeAny, input.data);
@@ -94,6 +103,56 @@ export async function PATCH(request: Request) {
     sameOrigin(request);
     await requireSession();
     const action = new URL(request.url).searchParams.get("action");
+    if (action === "price-list") {
+      const input = validate(z.object({
+        service: z.string().regex(/^[A-Za-z0-9_-]{1,80}$/),
+        items: z.array(z.unknown()),
+        revision: z.number().int().min(0)
+      }), await body(request, 600_000));
+      if (isPriceService(input.service)) {
+        const current = await loadSection("prices", input.revision) as SiteContent["prices"];
+        const clean = validate(contentSchemas.prices, { ...current, [input.service]: input.items });
+        const saved = await saveSection("prices", input.revision, clean);
+        return Response.json({ items: clean[input.service], revision: saved.revision });
+      }
+      const current = await loadSection("customPlans", input.revision) as SiteContent["customPlans"];
+      const items = validate(contentSchemas.customPlans, input.items);
+      if (items.some(item => item.serviceId !== input.service)) throw new HttpError(400, "Gói cước thuộc dịch vụ khác.");
+      const clean = validate(contentSchemas.customPlans, [...current.filter(item => item.serviceId !== input.service), ...items]);
+      const saved = await saveSection("customPlans", input.revision, clean);
+      return Response.json({ items, revision: saved.revision });
+    }
+    if (action === "field") {
+      const input=validate(z.object({section:z.enum(["contact","visibility"]),key:z.string().max(80),value:z.unknown(),revision:z.number().int().min(0)}),await body(request,16000));
+      const current=await loadSection(input.section,input.revision);
+      if(!Object.hasOwn(defaults[input.section],input.key))throw new HttpError(400,"Trường không hợp lệ.");
+      const clean=validate(contentSchemas[input.section] as z.ZodTypeAny,{...current,[input.key]:input.value});
+      const saved=await saveSection(input.section,input.revision,clean);
+      return Response.json({value:clean[input.key],revision:saved.revision});
+    }
+    if (action === "item") {
+      const input=validate(z.object({section:z.enum(["gallery","videos","faq","blocks","serviceCatalog","customPlans","prices"]),service:z.enum(services).optional(),item:z.unknown(),revision:z.number().int().min(0)}),await body(request,40000));
+      const current=await loadSection(input.section,input.revision);
+      if(input.section==="prices"&&!input.service)throw new HttpError(400,"Chọn dịch vụ.");
+      const schema=input.section==="prices" ? contentSchemas.prices.shape[input.service!] : contentSchemas[input.section];
+      const [item]=validate(schema as z.ZodTypeAny,[input.item]);
+      const rows=input.section==="prices"?current[input.service!]:current;
+      const updated=rows.some((row:{id:string})=>row.id===item.id)?rows.map((row:{id:string})=>row.id===item.id?item:row):[...rows,item];
+      const next=input.section==="prices"?{...current,[input.service!]:updated}:updated;
+      const clean=validate(contentSchemas[input.section] as z.ZodTypeAny,next);
+      const saved=await saveSection(input.section,input.revision,clean);
+      return Response.json({item,revision:saved.revision});
+    }
+    if (action === "page-section") {
+      const input=validate(z.object({page:z.string().max(80),part:z.string().max(80),data:z.record(z.string().max(8000)),revision:z.number().int().min(0)}),await body(request,200000));
+      const page=Object.hasOwn(pageCopyDefaults,input.page) ? pageCopyDefaults[input.page] : undefined;
+      const template=page && Object.hasOwn(page,input.part) ? page[input.part] : undefined;
+      if(!template||Object.keys(input.data).length!==Object.keys(template).length||!Object.keys(template).every(key=>Object.hasOwn(input.data,key)))throw new HttpError(400,"Phần nội dung không hợp lệ.");
+      const current=await loadSection("pageContent",input.revision);
+      const next={...current,[input.page]:{...current[input.page],[input.part]:input.data}};
+      const saved=await saveSection("pageContent",input.revision,next);
+      return Response.json({data:input.data,revision:saved.revision});
+    }
     if (action === "media-image") {
       const input = validate(z.object({ path: z.enum(mediaImagePaths), value: z.string(), revision: z.number().int().min(1) }), await body(request, 4096));
       const [record] = await sql()`SELECT data FROM vui_content WHERE section = 'media' AND revision = ${input.revision}`;

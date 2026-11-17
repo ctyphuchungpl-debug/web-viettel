@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { solutions, originalFaq } from "./content-source.ts";
+import { pageCopyDefaults } from "./page-copy.ts";
 import { TENDOO_PLANS, TENDOO_DEVICES } from "./tendoo-pricing.ts";
 import { SIGNATURE_PLANS } from "./signature-pricing.ts";
 import { CONTRACT_PLANS } from "./contract-pricing.ts";
@@ -71,10 +72,13 @@ export function parseVideo(value: string): VideoSource | null {
     return /\.mp4$/i.test(url.pathname) ? { kind: "mp4", value: url.href } : null;
   } catch { return null; }
 }
-const serviceChoice = z.union([z.enum(services), z.literal("")]);
+const serviceChoice = z.union([id, z.literal("")]);
 const list = <T extends z.ZodType<{id:string}>>(item: T, max = 100) =>
   z.array(item).max(max).refine(items => new Set(items.map(record => record.id)).size === items.length, "Mã mục bị trùng.");
 export const contentSchemas = {
+  pageContent: z.record(z.record(z.record(z.string().max(8000)))),
+  serviceCatalog: list(row.extend({ name:text, slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(80), nav:long, category:text, title:long, description:long.min(1), audience:long, points:z.array(text).max(20), image:optionalImage, logo:optionalImage, detailTitle:long, detailIntro:long, detailContent:long }).transform(item=>({...item,nav:item.nav||item.name,title:item.title||item.name,detailTitle:item.detailTitle||item.name,detailIntro:item.detailIntro||item.description}))).refine(items=>new Set(items.map(item=>item.slug)).size===items.length,"Đường dẫn dịch vụ bị trùng.").refine(items=>items.every(item=>!["other","consult"].includes(item.id)),"Mã dịch vụ được dành riêng cho tư vấn."),
+  customPlans: list(row.extend({ serviceId:id, name:text, price:fee.nullable(), duration:text, vatNote:text, details:z.array(long).max(20) }),500),
   contact: z.object({
     name: text, role: text, hotline: text.refine(phoneValid, "Hotline chưa hợp lệ."), address: text,
     zalo: z.string().max(500).refine(value => /^https:\/\/zalo\.me\/[\w/-]+$/.test(value), "Nhập link https://zalo.me/…"),
@@ -107,6 +111,9 @@ export function replaceMediaImage(media: SiteContent["media"], path: MediaImageP
 export type PublicSite = Omit<SiteContent, "contact"> & { contact: Omit<SiteContent["contact"], "email"> };
 const enable = <T,>(items:T[]) => items.map(item => ({ ...item, enabled: true }));
 export const defaults: SiteContent = {
+  pageContent: structuredClone(pageCopyDefaults),
+  serviceCatalog: enable(solutions.map(item=>({id:item.id, name:item.name,slug:item.url.slice(1),nav:item.nav,category:item.category,title:item.title,description:item.description,audience:item.audience,points:item.points,image:"",logo:"",detailTitle:item.name,detailIntro:item.description,detailContent:""}))),
+  customPlans:[],
   contact: {
     name: "Phan Hà Thị Vui", role: "Chuyên viên KHDN", hotline: "0974 590 804",
     address: "Đường Độc Lập, Khu Phố Long Phước, Phường Phước Bình, TP Đồng Nai",
@@ -136,10 +143,22 @@ export function publicContent(data: SiteContent): PublicSite {
   const { email, ...contact } = data.contact;
   const active = <T extends {enabled:boolean}>(items: T[]) => items.filter(item => item.enabled);
   return {
-    ...data, contact, gallery: active(data.gallery), videos: active(data.videos), faq: active(data.faq), blocks: active(data.blocks),
+    ...data, contact, serviceCatalog:active(data.serviceCatalog), customPlans:active(data.customPlans).filter(item=>data.serviceCatalog.some(service=>service.id===item.serviceId&&service.enabled)),
+    gallery: active(data.gallery).filter(item=>!item.service||data.serviceCatalog.some(service=>service.id===item.service&&service.enabled)), videos: active(data.videos).filter(item=>!item.service||data.serviceCatalog.some(service=>service.id===item.service&&service.enabled)), faq: active(data.faq), blocks: active(data.blocks),
     prices: {
       tendoo: active(data.prices.tendoo), chukyso: active(data.prices.chukyso), hopdong: active(data.prices.hopdong),
       hoadon: active(data.prices.hoadon), bhxh: active(data.prices.bhxh),
     },
   };
+}
+
+export function isPriceService(value: string): value is Service { return (services as readonly string[]).includes(value); }
+export function catalogUrl(service: SiteContent["serviceCatalog"][number]) {
+  return isPriceService(service.id) ? solutions.find(item=>item.id===service.id)!.url : "/dich-vu/"+service.slug;
+}
+export function catalogImage(service: SiteContent["serviceCatalog"][number], media: SiteContent["media"]) {
+  return isPriceService(service.id) ? media.products[service.id] : service.image || media.banner;
+}
+export function catalogLogo(service: SiteContent["serviceCatalog"][number]) {
+  return isPriceService(service.id) ? "/assets/"+solutions.find(item=>item.id===service.id)!.logo : service.logo;
 }
