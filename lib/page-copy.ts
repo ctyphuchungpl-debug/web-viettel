@@ -24,11 +24,11 @@ export const pageCopyDefaults: PageCopy = {
       "text-20": "Gói S-Invoice",
       "text-21": "Gói vBHXH",
       "text-22": "Nhu cầu",
-      "text-23": "Trao đổi thêm qua Zalo",
+      "text-23": "Trao đổi thêm qua Tammi",
       "text-24": "1. Sao chép nội dung tư vấn.",
-      "text-25": "2. Mở Chat Zalo với số ",
+      "text-25": "2. Mở Chat Tammi.",
       "text-26": "3. Dán và gửi tin nhắn để bắt đầu trao đổi.",
-      "text-27": "Mở Chat Zalo",
+      "text-27": "Mở Chat Tammi",
       "text-28": "Bộ giải pháp: Tendoo · Chữ ký số · Hợp đồng điện tử · Hóa đơn điện tử · Kê khai BHXH.",
       "text-29": "Tư vấn: ",
       "text-30": "Đóng thông tin "
@@ -46,7 +46,7 @@ export const pageCopyDefaults: PageCopy = {
       "text-3": "Bắt đầu từ điều bạn cần.",
       "text-4": "Từ bán hàng đến ký kết và quản lý hồ sơ.",
       "text-5": " Cùng Viettel chọn giải pháp phù hợp, để công việc mỗi ngày thuận tiện hơn.",
-      "text-6": "Chat Zalo cùng ",
+      "text-6": "Chat Tammi cùng ",
       "text-7": " KẾT NỐI CÙNG BẠN",
       "text-8": "Tư vấn",
       "text-9": "THEO CÁCH CỦA BẠN"
@@ -874,10 +874,10 @@ export const pageCopyDefaults: PageCopy = {
       "text-2": "Điện thoại: ",
       "text-3": "Sử dụng và bảo vệ thông tin",
       "text-4": "Thông tin trong biểu mẫu được lưu để chuyên viên có thể liên hệ tư vấn. Nếu bạn nhập email, hệ thống sử dụng địa chỉ đó để gửi xác nhận yêu cầu.",
-      "text-5": "Chỉ cung cấp thông tin liên hệ cần thiết. Bạn cũng có thể liên hệ trực tiếp qua Zalo hoặc hotline."
+      "text-5": "Chỉ cung cấp thông tin liên hệ cần thiết. Bạn cũng có thể liên hệ trực tiếp qua Tammi hoặc hotline."
     },
     "general": {
-      "text-1": "Chat Zalo",
+      "text-1": "Chat Tammi",
       "text-2": "Gọi "
     }
   },
@@ -922,11 +922,11 @@ export const pageCopyLabels: Record<string,{title:string;sections:Record<string,
           "text-20": "Nội dung — Gói S-Invoice",
           "text-21": "Nội dung — Gói vBHXH",
           "text-22": "Nội dung — Nhu cầu",
-          "text-23": "Nội dung — Trao đổi thêm qua Zalo",
+          "text-23": "Nội dung — Trao đổi thêm qua Tammi",
           "text-24": "Đoạn văn — 1. Sao chép nội dung tư vấn.",
-          "text-25": "Đoạn văn — 2. Mở Chat Zalo với số",
+          "text-25": "Đoạn văn — 2. Mở Chat Tammi.",
           "text-26": "Đoạn văn — 3. Dán và gửi tin nhắn để bắt đầu trao đổi.",
-          "text-27": "Nút hoặc liên kết — Mở Chat Zalo",
+          "text-27": "Nút hoặc liên kết — Mở Chat Tammi",
           "text-28": "Đoạn văn — Bộ giải pháp: Tendoo · Chữ ký số · Hợp đồng điện tử · Hóa ",
           "text-29": "Đoạn văn — Tư vấn:",
           "text-30": "Nút hoặc liên kết — Đóng thông tin"
@@ -950,7 +950,7 @@ export const pageCopyLabels: Record<string,{title:string;sections:Record<string,
           "text-3": "Nội dung — Bắt đầu từ điều bạn cần.",
           "text-4": "Đoạn văn — Từ bán hàng đến ký kết và quản lý hồ sơ.",
           "text-5": "Đoạn văn — Cùng Viettel chọn giải pháp phù hợp, để công việc mỗi ngày",
-          "text-6": "Nút hoặc liên kết — Chat Zalo cùng",
+          "text-6": "Nút hoặc liên kết — Chat Tammi cùng",
           "text-7": "Nội dung — KẾT NỐI CÙNG BẠN",
           "text-8": "Nút hoặc liên kết — Tư vấn",
           "text-9": "Nội dung — THEO CÁCH CỦA BẠN"
@@ -2015,7 +2015,7 @@ export const pageCopyLabels: Record<string,{title:string;sections:Record<string,
       "general": {
         "label": "Điều hướng và thông tin chung",
         "fields": {
-          "text-1": "Nội dung — Chat Zalo",
+          "text-1": "Nội dung — Chat Tammi",
           "text-2": "Nội dung — Gọi"
         }
       }

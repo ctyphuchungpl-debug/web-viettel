@@ -1,8 +1,23 @@
 "use client";
 import { usePathname } from "next/navigation";
-import { MessageCircle, Phone } from "lucide-react";
-import { phoneDigits } from "../lib/site-data";
+import { MessageCircle, Phone, X } from "lucide-react";
+import type { ReactNode } from "react";
+import { defaultTammiLink, phoneDigits, tammiQrImage } from "../lib/site-data";
 import { useSite } from "./site-provider";
+
+const tammiDialogId = "tammi-contact-dialog";
+
+export function TammiLink({className, children}: {className:string; children:ReactNode}) {
+  const { contact } = useSite();
+  return <a className={className} href={contact.tammi} target="_blank" rel="noopener noreferrer"
+    aria-haspopup="dialog" aria-controls={tammiDialogId} onClick={event=>{
+      if(event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+      const dialog = document.getElementById(tammiDialogId);
+      if(!(dialog instanceof HTMLDialogElement)) return;
+      event.preventDefault();
+      if(!dialog.open) dialog.showModal();
+    }}>{children}</a>;
+}
 
 export function PublicContact() {
   const copy = useSite().pageContent["shared"];
@@ -28,8 +43,21 @@ export function PublicContact() {
       </div>
     </section>
     <nav className="contact-dock" aria-label={`Liên hệ trực tiếp với ${contact.name}`}>
-      <a className="contact-zalo" href={contact.zalo} target="_blank" rel="noopener noreferrer"><MessageCircle size={21}/><span>{copy["general"]["text-1"]}</span></a>
+      {pathname !== defaultTammiLink && <TammiLink className="contact-tammi"><MessageCircle size={21}/><span>{copy["general"]["text-1"]}</span></TammiLink>}
       <a className="contact-call" href={phone}><Phone size={20}/><span>{copy["general"]["text-2"]}{contact.hotline}</span></a>
     </nav>
+    <dialog id={tammiDialogId} className="tammi-dialog" aria-labelledby="tammi-dialog-title" aria-describedby="tammi-dialog-instructions"
+      onClick={event=>{if(event.target===event.currentTarget)event.currentTarget.close();}}>
+      <div className="tammi-dialog-content">
+        <form method="dialog"><button type="submit" className="tammi-dialog-close" aria-label="Đóng popup Tammi"><X size={22}/></button></form>
+        <h2 id="tammi-dialog-title">Chat Tammi với {contact.name}</h2>
+        <p id="tammi-dialog-instructions">Mở ứng dụng Viettel Tammi, chọn Quét mã QR rồi quét mã bên dưới để kết nối.</p>
+        <img src={tammiQrImage} alt={"Mã QR Tammi của "+contact.name} width={1185} height={2560} loading="lazy"/>
+        <div className="tammi-dialog-actions">
+          <a className="btn btn-red" href={tammiQrImage} download>Tải ảnh mã QR</a>
+          {contact.tammi !== defaultTammiLink && <a className="text-link" href={contact.tammi} target="_blank" rel="noopener noreferrer">Mở link Tammi ↗</a>}
+        </div>
+      </div>
+    </dialog>
   </>;
 }

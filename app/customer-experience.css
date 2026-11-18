@@ -135,8 +135,7 @@ html:root body .bh-banner h1>span { font-size: 40px; white-space: normal; }
 html:root body :is(.td-section h2,.ca-section h2,.vct-section h2,.sinv-intro h2,.sinv-section h2,.bh-intro h2,.bh-section h2) { font-size: 48px; line-height: 1.2; }
 .contact-dock { position: fixed; right: 22px; bottom: 24px; z-index: 29; display: flex; flex-direction: column; gap: 10px; }
 .contact-dock a { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 18px; border-radius: 28px; color: #fff; font-weight: 600; font-size: 17px; box-shadow: 0 4px 16px #13223026; }
-.contact-dock .contact-zalo { background: #0068df; }
-.contact-dock .contact-call { background: var(--red); }
+.contact-dock :is(.contact-tammi,.contact-call) { background: var(--red); }
 .contact-dock a:hover { filter: brightness(.94); }
 .contact-footer { background: #f6f5f1; border-top: 1px solid var(--line); padding: 28px 0 36px; }
 .contact-footer>.wrap { display: grid; grid-template-columns: minmax(0,1.6fr) minmax(0,1fr); align-items: start; gap: 28px 40px; padding-right: 200px; }
@@ -251,3 +250,47 @@ html:root body :is(.td-section h2,.ca-section h2,.vct-section h2,.sinv-intro h2,
   .contact-footer address { font-size: 16px; }
   .contact-footer-phone a { font-size: 20px; }
 }
+
+.tammi-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(440px, calc(100% - 24px));
+  max-height: calc(100dvh - 24px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 0;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 16px 48px #17242e33;
+}
+.tammi-dialog::backdrop { background: #17242e99; }
+.tammi-dialog-content { position: relative; padding: 30px 20px 20px; text-align: center; }
+.tammi-dialog-close {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: #f6f5f1;
+  color: var(--ink);
+  cursor: pointer;
+}
+.tammi-dialog h2 { margin: 0 24px 8px; font-size: clamp(20px, 5vw, 25px); line-height: 1.25; }
+.tammi-dialog p { color: var(--muted); font-size: 16px; line-height: 1.5; }
+.tammi-dialog img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: min(58dvh, 460px);
+  margin: 12px auto;
+  object-fit: contain;
+}
+.tammi-dialog-actions { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px 16px; }
+.tammi-dialog-actions .btn { min-height: 44px; padding: 8px 16px; font-size: 16px; }

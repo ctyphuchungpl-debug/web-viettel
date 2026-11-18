@@ -72,6 +72,8 @@ export function parseVideo(value: string): VideoSource | null {
     return /\.mp4$/i.test(url.pathname) ? { kind: "mp4", value: url.href } : null;
   } catch { return null; }
 }
+export const defaultTammiLink = "/lien-he-tammi";
+export const tammiQrImage = "/assets/tammi-phan-ha-thi-vui.png";
 const serviceChoice = z.union([id, z.literal("")]);
 const list = <T extends z.ZodType<{id:string}>>(item: T, max = 100) =>
   z.array(item).max(max).refine(items => new Set(items.map(record => record.id)).size === items.length, "Mã mục bị trùng.");
@@ -81,7 +83,8 @@ export const contentSchemas = {
   customPlans: list(row.extend({ serviceId:id, name:text, price:fee.nullable(), duration:text, vatNote:text, details:z.array(long).max(20) }),500),
   contact: z.object({
     name: text, role: text, hotline: text.refine(phoneValid, "Hotline chưa hợp lệ."), address: text,
-    zalo: z.string().max(500).refine(value => /^https:\/\/zalo\.me\/[\w/-]+$/.test(value), "Nhập link https://zalo.me/…"),
+    tammi: z.union([z.literal(defaultTammiLink), z.string().trim().max(500).url()
+      .refine(value => /^https:\/\/(?:[a-z\d-]+\.)?tammi\.vn\/\S+$/i.test(value), "Nhập link HTTPS của Tammi.")]).default(defaultTammiLink),
     email: z.union([z.literal(""), z.string().trim().email().max(180)]),
     portrait: image, ticker: z.array(text).min(1).max(12),
   }),
@@ -117,7 +120,7 @@ export const defaults: SiteContent = {
   contact: {
     name: "Phan Hà Thị Vui", role: "Chuyên viên KHDN", hotline: "0974 590 804",
     address: "Đường Độc Lập, Khu Phố Long Phước, Phường Phước Bình, TP Đồng Nai",
-    zalo: "https://zalo.me/0974590804", email: "", portrait: "/assets/phan-ha-thi-vui.jpg",
+    tammi: defaultTammiLink, email: "", portrait: "/assets/phan-ha-thi-vui.jpg",
     ticker: ["BÁN HÀNG THÔNG MINH","KÝ KẾT THUẬN TIỆN","HỒ SƠ GỌN GÀNG","KẾT NỐI TƯƠNG LAI"]
   },
   media: {

@@ -1,0 +1,24 @@
+.tammi-contact {
+  max-width: 38rem;
+  padding-block: 2rem 3rem;
+  text-align: center;
+}
+.tammi-contact h1 {
+  margin-block: 1rem .5rem;
+  font-size: clamp(1.75rem, 5vw, 2.75rem);
+}
+.tammi-contact > img {
+  display: block;
+  width: min(100%, 17rem);
+  height: auto;
+  margin: 1rem auto;
+  border: 1px solid var(--line);
+  border-radius: .75rem;
+}
+.tammi-contact-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .75rem 1rem;
+}

@@ -38,7 +38,12 @@ export async function readContent() {
   for (const row of rows) {
     if (!Object.hasOwn(defaults, row.section)) continue;
     const section = row.section as ContentKey;
-    Object.assign(data, { [section]: row.data as SiteContent[typeof section] });
+    if (section === "contact") {
+      const { zalo: _oldZalo, ...contact } = row.data;
+      data.contact = { ...defaults.contact, ...contact };
+    } else {
+      Object.assign(data, { [section]: row.data as SiteContent[typeof section] });
+    }
     revisions[section] = row.revision;
   }
   for (const [page, sections] of Object.entries(defaults.pageContent)) {
@@ -47,5 +52,14 @@ export async function readContent() {
       data.pageContent[page][section] = {...fields,...data.pageContent[page][section]};
     }
   }
+  const { home, shared } = data.pageContent;
+  const chat = home.general;
+  // Older copies saved in Neon already include the Zalo wording.
+  chat["text-23"] = chat["text-23"].replace(/\bZalo\b/g, "Tammi");
+  chat["text-25"] = chat["text-25"].trim() === "2. Mở Chat Zalo với số"
+    ? defaults.pageContent.home.general["text-25"] : chat["text-25"].replace(/\bZalo\b/g, "Tammi");
+  chat["text-27"] = chat["text-27"].replace(/\bZalo\b/g, "Tammi");
+  home.home["text-6"] = home.home["text-6"].replace(/\bZalo\b/g, "Tammi");
+  shared.general["text-1"] = shared.general["text-1"].replace(/\bZalo\b/g, "Tammi");
   return { data, revisions };
 }
