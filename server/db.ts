@@ -39,7 +39,7 @@ export async function readContent() {
     if (!Object.hasOwn(defaults, row.section)) continue;
     const section = row.section as ContentKey;
     if (section === "contact") {
-      const { zalo: _oldZalo, ...contact } = row.data;
+      const { zalo: _oldZalo, tammi: _oldTammi, ...contact } = row.data;
       data.contact = { ...defaults.contact, ...contact };
     } else {
       Object.assign(data, { [section]: row.data as SiteContent[typeof section] });

@@ -10,7 +10,7 @@ const options = (values: Record<string,string>) => Object.entries(values);
 const serviceOptions: Option[] = [["","Nội dung chung"], ...services.map((id):Option=>[id,serviceNames[id]])];
 
 export const contactFields = [
-  input("name","Tên chuyên viên"),input("role","Chức danh"),input("hotline","Hotline"),input("tammi","Link Tammi"),
+  input("name","Tên chuyên viên"),input("role","Chức danh"),input("hotline","Hotline"),field("tammiQr","Ảnh QR Tammi","image"),
   input("address","Địa chỉ"),{...input("email","Email nhận tư vấn"),optional:true},field("portrait","Ảnh đại diện","image"),
   field("ticker","Thông điệp chữ chạy (mỗi dòng một thông điệp)","lines"),
 ];
