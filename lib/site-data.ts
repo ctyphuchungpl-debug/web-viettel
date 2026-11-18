@@ -80,9 +80,13 @@ export function tammiQrDownload(image: string) {
 const serviceChoice = z.union([id, z.literal("")]);
 const list = <T extends z.ZodType<{id:string}>>(item: T, max = 100) =>
   z.array(item).max(max).refine(items => new Set(items.map(record => record.id)).size === items.length, "Mã mục bị trùng.");
+function serviceSlug(value:string) {
+  return value.toLowerCase().normalize("NFD").replace(/\p{M}/gu,"").replace(/đ/g,"d")
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,80).replace(/-+$/,"");
+}
 export const contentSchemas = {
   pageContent: z.record(z.record(z.record(z.string().max(8000)))),
-  serviceCatalog: list(row.extend({ name:text, slug:z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(80), nav:long, category:text, title:long, description:long.min(1), audience:long, points:z.array(text).max(20), image:optionalImage, logo:optionalImage, detailTitle:long, detailIntro:long, detailContent:long }).transform(item=>({...item,nav:item.nav||item.name,title:item.title||item.name,detailTitle:item.detailTitle||item.name,detailIntro:item.detailIntro||item.description}))).refine(items=>new Set(items.map(item=>item.slug)).size===items.length,"Đường dẫn dịch vụ bị trùng.").refine(items=>items.every(item=>!["other","consult"].includes(item.id)),"Mã dịch vụ được dành riêng cho tư vấn."),
+  serviceCatalog: list(row.extend({ name:text, slug:z.string().trim().max(500,"Đường dẫn quá dài.").default(""), nav:long, category:text, title:long, description:long.min(1), audience:long, points:z.array(text).max(20), image:optionalImage, logo:optionalImage, detailTitle:long, detailIntro:long, detailContent:long }).transform(item=>({...item,slug:serviceSlug(item.slug||item.name)||serviceSlug("dich-vu-"+item.id),nav:item.nav||item.name,title:item.title||item.name,detailTitle:item.detailTitle||item.name,detailIntro:item.detailIntro||item.description}))).refine(items=>new Set(items.map(item=>item.slug)).size===items.length,"Đường dẫn dịch vụ đã được sử dụng. Hãy nhập đường dẫn khác.").refine(items=>items.every(item=>!["other","consult"].includes(item.id)),"Mã dịch vụ được dành riêng cho tư vấn."),
   customPlans: list(row.extend({ serviceId:id, name:text, price:fee.nullable(), duration:text, vatNote:text, details:z.array(long).max(20) }),500),
   contact: z.object({
     name: text, role: text, hotline: text.refine(phoneValid, "Hotline chưa hợp lệ."), address: text,
