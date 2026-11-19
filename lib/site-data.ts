@@ -165,6 +165,10 @@ export function isPriceService(value: string): value is Service { return (servic
 export function catalogUrl(service: SiteContent["serviceCatalog"][number]) {
   return isPriceService(service.id) ? solutions.find(item=>item.id===service.id)!.url : "/dich-vu/"+service.slug;
 }
+export function catalogCardTitle(service: SiteContent["serviceCatalog"][number]) {
+  const original=solutions.find(item=>item.id===service.id);
+  return original&&service.title===original.title ? service.name : service.title||service.name;
+}
 export function catalogImage(service: SiteContent["serviceCatalog"][number], media: SiteContent["media"]) {
   return isPriceService(service.id) ? media.products[service.id] : service.image || media.banner;
 }

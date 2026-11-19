@@ -10,7 +10,7 @@ function PlanCard({item}:{item:BhxhPriceItem}){
   const copy = useSite().pageContent["price-bhxh"];
 return <article className={`bqp-card${item.trial?" bqp-trial":""}${item.kind==="combo"?" bqp-combo":""}`} data-bhxh-id={item.id}>
   <div className="bqp-card-tags"><span>{bhxhActionLabel(item.action)}</span><span>{item.trial?"DÙNG THỬ":item.kind==="single"?"ĐƠN LẺ":"COMBO"}</span></div>
-  <h3>{item.kind==="combo"?"Viettel-CA + vBHXH":item.name}</h3>
+  <h3>{item.name}</h3>
   <p className="bqp-duration">{item.kind==="combo"?"Viettel-CA: ":"Sử dụng: "}<strong>{item.months} {copy["general"]["text-1"]}</strong></p>
   <div className="bqp-price-block">{item.referencePrice!==undefined&&<del aria-label={`Giá tham khảo ${formatBhxhPrice(item.referencePrice)}`}>{formatBhxhPrice(item.referencePrice)}</del>}<p>{formatBhxhPrice(item.price)}</p></div>
   <p className="bqp-tax">{item.kind==="single"?"Không chịu VAT":"Thuế và thời hạn BHXH: xác nhận khi tư vấn"}</p>
